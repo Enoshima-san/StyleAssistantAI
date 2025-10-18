@@ -1,7 +1,11 @@
 // Подключние фреймворков и библиотек
-const express = require('express');
-const cors = require('cors');
-const sqlite3 = require('sqlite3').verbose()
+import { InferenceClient  } from "@huggingface/inference";
+import express from 'express';
+import cors from 'cors';
+import sqlite3 from 'sqlite3'
+import dotenv from 'dotenv'
+
+dotenv.config()
 
 // Подключение базы данных
 const db = new sqlite3.Database("testDatabase.db" ,sqlite3.OPEN_READWRITE, (err) => {
@@ -84,7 +88,26 @@ app.post('/login', (request, response) => {
     })
 });
 
+// Получение запроса на сервер и отправка промпта на сервер ИИ через Hugging Face
+app.post('/prompt', async (req, res) => {
+    const {message} = req.body;
+    const modelId = 'deepseek-ai/DeepSeek-R1'
+    const HUGGING_FACE_TOKEN = process.env.API_KEY; // Store securely
+    const client = new InferenceClient(HUGGING_FACE_TOKEN)
+    try {
+        const out = await client.chatCompletion({
+            model: 'deepseek-ai/DeepSeek-R1',
+            messages: [{ role: 'user', content: message }],
+            max_tokens: 512,
+        });;
+        res.json(out.choices[0].message);
+    } catch (error) {
+        console.error('Hugging Face API error:', error.response ? error.response.data : error.message);
+        res.status(500).json({ error: 'Failed to perform inference' });
+    }
+});
+
 // Иницилизация сервера по порту 3000
-app.listen(3000, () => {
-    console.log('Server running on port 3000');
+app.listen(process.env.PORT, () => {
+    console.log(`Server running on port ${process.env.PORT}`);
 });

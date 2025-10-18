@@ -1,7 +1,16 @@
 {
   "dependencies": {
+    "@ai-sdk/openai": "^2.0.52",
+    "@huggingface/inference": "^4.11.3",
+    "@huggingface/transformers": "^3.7.5",
+    "ai": "^5.0.76",
+    "axios": "^1.12.2",
     "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
     "express": "^5.1.0",
+    "openai": "^6.5.0",
     "sqlite3": "^5.1.7"
-  }
+  },
+  "main": "server.js",
+  "type": "module"
 }
