@@ -8,11 +8,11 @@
       <jdbc-url>jdbc:sqlite:$PROJECT_DIR$/testDatabase.db</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
-    <data-source source="LOCAL" name="fashion_ai" uuid="51790f2e-64fa-4471-9bdc-a825cb4600a7">
+    <data-source source="LOCAL" name="BD_test" uuid="eb6f19e2-8aed-4488-afa0-b06f1c78a1d7">
       <driver-ref>sqlite.xerial</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
-      <jdbc-url>jdbc:sqlite:$USER_HOME$/Desktop/Парсеры/fashion_ai.db</jdbc-url>
+      <jdbc-url>jdbc:sqlite:$PROJECT_DIR$/BD_test.db</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
       <libraries>
         <library>

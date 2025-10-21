@@ -13,7 +13,7 @@
         </introspection-scope>
       </schema-mapping>
     </data-source>
-    <data-source name="fashion_ai" uuid="51790f2e-64fa-4471-9bdc-a825cb4600a7">
+    <data-source name="BD_test" uuid="eb6f19e2-8aed-4488-afa0-b06f1c78a1d7">
       <database-info product="SQLite" version="3.45.1" jdbc-version="4.2" driver-name="SQLite JDBC" driver-version="3.45.1.0" dbms="SQLITE" exact-version="3.45.1" exact-driver-version="3.45">
         <identifier-quote-string>&quot;</identifier-quote-string>
       </database-info>

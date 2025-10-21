@@ -4,11 +4,12 @@ import express from 'express';
 import cors from 'cors';
 import sqlite3 from 'sqlite3'
 import dotenv from 'dotenv'
+import { randomUUID } from 'crypto';
 
-dotenv.config()
+dotenv.config({ path: './.env' });
 
 // Подключение базы данных
-const db = new sqlite3.Database("testDatabase.db" ,sqlite3.OPEN_READWRITE, (err) => {
+const db = new sqlite3.Database("BD_test.db" ,sqlite3.OPEN_READWRITE, (err) => {
     if(err)
     {
         console.log("Error Occurred - " + err.message);
@@ -30,62 +31,76 @@ app.use(express.urlencoded({ extended: true }))
 app.post('/registration', (request, response) => {
     const data = request.body
     let flag = "bad";
-    db.serialize(() => {
-        db.get('SELECT indexTest as id FROM mainTest ORDER BY id DESC LIMIT 1;', (err, row) => {
+
+    // Проверяем, существует ли пользователь с таким именем
+    db.get('SELECT * FROM Пользователи WHERE Имя = ?', [data.username], (err, row) => {
         if (err) {
             console.error(err.message);
             response.status(400);
             response.send(JSON.stringify(flag));
             response.end();
-        } else {
-            let userID
-            if (row == undefined) userID = 0
-            else userID = row.id + 1
-            let stmt = db.prepare('INSERT INTO mainTest VALUES (?,?,?)')
-            stmt.run(`${userID}`,`${data.username}`,`${data.password}`,(err) =>{
-                if (err)
-                {
+            return;
+        }
+
+        if (row) {
+            // Пользователь уже существует
+            console.log("User already exists:", data.username);
+            response.status(400);
+            response.send(JSON.stringify(flag));
+            response.end();
+            return;
+        }
+
+        // Новый пользователь
+        const userId = randomUUID();
+        const currentDate = new Date().toISOString();
+
+        const tempEmail = `${data.username}@temp.com`;
+
+        db.run('INSERT INTO Пользователи (ID_Пользователя, Почта, Пароль, Имя, Дата_Регистрации) VALUES (?, ?, ?, ?, ?)',
+            [userId, tempEmail, data.password, data.username, currentDate],
+            (err) => {
+                if (err) {
                     console.error(err.message);
-                    stmt.finalize()
                     response.status(400);
                     response.send(JSON.stringify(flag));
                     response.end();
-                }
-                else{ flag = "yea";
-                    stmt.finalize()
+                } else {
+                    flag = "yea";
+                    console.log("User registered successfully:", data.username);
                     response.status(201);
                     response.send(JSON.stringify(flag));
                     response.end();
-                }            
-            });
-        }
-    })
-    })
+                }
+            }
+        );
+    });
 });
 
 // Получение данных на сервер и сверка их с существующими в базе данных
 app.post('/login', (request, response) => {
-    const data = request.body
+    const data = request.body;
     let flag = "bad";
-    db.serialize(() => {
-        db.get(`SELECT textTest as name, numTest as pass FROM mainTest WHERE name='${data.username}' AND pass='${data.password}';`, (err, row) => {
-        if (err) {
-            console.error(err.message);
-            response.status(400);
-            response.send(JSON.stringify(flag));
-            response.end();
-       } else {
-            if (row != undefined && row.name === data.username && row.pass === data.password)
-            {
-                console.log("ye")
-                flag = "yea";
-             }
-            response.status(201);
-            response.send(JSON.stringify(flag));
-            response.end();
-       }
-        })
-    })
+
+    db.get('SELECT ID_Пользователя, Имя FROM Пользователи WHERE Имя = ? AND Пароль = ?',
+        [data.username, data.password],
+        (err, row) => {
+            if (err) {
+                console.error(err.message);
+                response.status(400);
+                response.send(JSON.stringify(flag));
+                response.end();
+            } else {
+                if (row) {
+                    console.log("Login successful for user:", data.username);
+                    flag = "yea";
+                }
+                response.status(201);
+                response.send(JSON.stringify(flag));
+                response.end();
+            }
+        }
+    );
 });
 
 // Получение запроса на сервер и отправка промпта на сервер ИИ через Hugging Face
@@ -108,6 +123,7 @@ app.post('/prompt', async (req, res) => {
 });
 
 // Иницилизация сервера по порту 3000
-app.listen(process.env.PORT, () => {
-    console.log(`Server running on port ${process.env.PORT}`);
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`✅ Server running on port ${PORT}`);
 });
