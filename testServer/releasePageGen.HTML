@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ваши предпочтения</title>
+    <link rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Навигационные вкладки -->
+        <div class="tabs">
+            <button class="tab-button">Профиль</button>
+            <button class="tab-button active">Рекомендация</button>
+            <button class="tab-button">Избранное</button>
+        </div>
+
+        <!-- Форма предпочтений -->
+        <div class="preferences-form">
+            <h2>Ваши предпочтения</h2>
+            <div class="form-section">
+                <h3>Необходимо</h3>
+                <div class="input-group">
+                    <input type="text" placeholder="Пол">
+                    <input type="text" placeholder="Размер">
+                    <input type="text" placeholder="Рост">
+                    <input type="text" placeholder="Стиль">
+                </div>
+            </div>
+            <div class="form-section">
+                <h3>Дополнительно</h3>
+                <div class="input-group">
+                    <input type="text" placeholder="Цвет">
+                    <input type="text" placeholder="Материал">
+                    <input type="text" placeholder="Сезон">
+                    <input type="text" placeholder="Цель">
+                    <input type="text" placeholder="Погода">
+                    <input type="text" placeholder="Климат">
+                </div>
+            </div>
+            <button class="show-outfit">Показать аутфит</button>
+        </div>
+
+        <!-- Карточки товаров -->
+        <div class="products">
+            <div class="product-card">
+                <img src="https://via.placeholder.com/150" alt="product1">
+                <div class="product-info">
+                    <p>Основная информация</p>
+                    <p>Состав: хлопок; полиэстер; Цвет: белый</p>
+                    <p>Пол: Женский</p>
+                    <p>Рубашка женская летняя оверсайз с воротником для девочки с длинным рукавом.</p>
+                    <button>Купить</button>
+                </div>
+            </div>
+
+            <div class="product-card">
+                <img src="https://via.placeholder.com/150" alt="product2">
+                <div class="product-info">
+                    <p>Основная информация</p>
+                    <p>Состав: акрил-77%; полиамид-13%; полиэстер-10%; Цвет: бордовый</p>
+                    <p>Пол: Женский</p>
+                    <p>Трендовый свитер женский укороченный оверсайз.</p>
+                    <button>Купить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="scripts/script.js"></script>
+</body>
+</html>
