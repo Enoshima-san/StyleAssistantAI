@@ -32,8 +32,8 @@ app.post('/registration', (request, response) => {
     const data = request.body
     let flag = "bad";
 
-    // Проверяем, существует ли пользователь с таким именем
-    db.get('SELECT * FROM Пользователи WHERE Имя = ?', [data.username], (err, row) => {
+    // Проверяем, существует ли пользователь с такой почтой
+    db.get('SELECT * FROM Пользователи WHERE Почта = ?', [data.usermail], (err, row) => {
         if (err) {
             console.error(err.message);
             response.status(400);
@@ -44,7 +44,7 @@ app.post('/registration', (request, response) => {
 
         if (row) {
             // Пользователь уже существует
-            console.log("User already exists:", data.username);
+            console.log("User already exists:", data.usermail);
             response.status(400);
             response.send(JSON.stringify(flag));
             response.end();
@@ -55,10 +55,8 @@ app.post('/registration', (request, response) => {
         const userId = randomUUID();
         const currentDate = new Date().toISOString();
 
-        const tempEmail = `${data.username}@temp.com`;
-
         db.run('INSERT INTO Пользователи (ID_Пользователя, Почта, Пароль, Имя, Дата_Регистрации) VALUES (?, ?, ?, ?, ?)',
-            [userId, tempEmail, data.password, data.username, currentDate],
+            [userId, data.usermail, data.password, data.username, currentDate],
             (err) => {
                 if (err) {
                     console.error(err.message);
@@ -67,7 +65,7 @@ app.post('/registration', (request, response) => {
                     response.end();
                 } else {
                     flag = "yea";
-                    console.log("User registered successfully:", data.username);
+                    console.log("User registered successfully:", data.usermail);
                     response.status(201);
                     response.send(JSON.stringify(flag));
                     response.end();
@@ -82,8 +80,8 @@ app.post('/login', (request, response) => {
     const data = request.body;
     let flag = "bad";
 
-    db.get('SELECT ID_Пользователя, Имя FROM Пользователи WHERE Имя = ? AND Пароль = ?',
-        [data.username, data.password],
+    db.get('SELECT ID_Пользователя, Имя FROM Пользователи WHERE Почта = ? AND Пароль = ?',
+        [data.usermail, data.password],
         (err, row) => {
             if (err) {
                 console.error(err.message);
@@ -92,7 +90,7 @@ app.post('/login', (request, response) => {
                 response.end();
             } else {
                 if (row) {
-                    console.log("Login successful for user:", data.username);
+                    console.log("Login successful for user:", data.usermail);
                     flag = "yea";
                 }
                 response.status(201);
