@@ -103,23 +103,30 @@ app.post('/login', (request, response) => {
 
 // Получение запроса на сервер и отправка промпта на сервер ИИ через Hugging Face
 app.post('/prompt', async (req, res) => {
-    const {message} = req.body;
-    const modelId = 'deepseek-ai/DeepSeek-R1'
-    const HUGGING_FACE_TOKEN = process.env.API_KEY; // Store securely
+    const message = req.body;
+    const testPromt = `Опиши в 20 словах аутфит по следующим характеристикам: Пол-`+
+    `${message.gender}, Размер-${message.size}, Рост-${message.height}, Стиль-${message.style},`+ 
+    `Цвет-${message.color}, Материал-${message.material}, Сезон-${message.season}, Цель-${message.purpose},`+ 
+    `Погода-${message.weather}, Климат-${message.climate}`;
+    console.log(testPromt)
+    const HUGGING_FACE_TOKEN = process.env.API_KEY;
     const client = new InferenceClient(HUGGING_FACE_TOKEN)
     try {
         const out = await client.chatCompletion({
             model: 'deepseek-ai/DeepSeek-R1',
-            messages: [{ role: 'user', content: message }],
+            messages: [{ role: 'user', content: testPromt }],
             max_tokens: 512,
-        });;
-        res.json(out.choices[0].message);
+        })
+        const originalString = out.choices[0].message.content
+        let newString = originalString.replace(/<think>.*?<\/think>/gs, '')
+        console.log(newString)
+        res.send(JSON.stringify('yea'));
     } catch (error) {
         console.error('Hugging Face API error:', error.response ? error.response.data : error.message);
         res.status(500).json({ error: 'Failed to perform inference' });
     }
-});
 
+});
 // Иницилизация сервера по порту 3000
 const PORT = process.env.PORT
 app.listen(PORT, () => {
