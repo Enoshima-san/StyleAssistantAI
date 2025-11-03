@@ -101,6 +101,7 @@ app.post('/login', (request, response) => {
     );
 });
 
+
 // Получение запроса на сервер и отправка промпта на сервер ИИ через Hugging Face
 app.post('/prompt', async (req, res) => {
     const message = req.body;
@@ -120,7 +121,89 @@ app.post('/prompt', async (req, res) => {
         const originalString = out.choices[0].message.content
         let newString = originalString.replace(/<think>.*?<\/think>/gs, '')
         console.log(newString)
-        res.send(JSON.stringify('yea'));
+
+        // Ключевые слова
+        const mainKeywords = [
+            'рубашка', 'свитер', 'футболка', 'штаны', 'платье', 'юбка', 'брюки',
+            'джинсы', 'куртка', 'пальто', 'кофта', 'топ', 'шорты', 'пиджак',
+            'ветровка', 'толстовка', 'худи', 'майка', 'кеды', 'туфли',
+            'костюм', 'плащ', 'пуховик', 'бомбер', 'кроссовки', 'лонгслив'
+        ];
+
+        const foundKeywords = [];
+        for (const keyword of mainKeywords) {
+            if (newString.toLowerCase().includes(keyword)) {
+                foundKeywords.push(keyword);
+            }
+        }
+
+        console.log('Найденные ключевые слова в ответе ИИ:', foundKeywords);
+
+        let dbResults = [];
+
+        if (foundKeywords.length > 0) {
+            const placeholders = foundKeywords.map(() => '?').join(',');
+            const sqlQuery = `
+                SELECT
+                    т.ID_Товара,
+                    т.Название AS Название_Товара,
+                    т.Описание,
+                    т.Ссылка_Товар,
+                    х.Бренд,
+                    х.Состав,
+                    х.Цвет,
+                    х.Гендер,
+                    х.Размер_на_Модели,
+                    х.Рост_Модели,
+                    х.Параметры_Модели,
+                    х.Покрой,
+                    х.Цена,
+                    х.Ссылка_Изображение,
+                    к.Название AS Категория,
+                    б.Название AS Название_Бренда
+                FROM Товары т
+                LEFT JOIN Характеристики_Товаров х ON т.ID_Товара = х.ID_Товара
+                LEFT JOIN Категории к ON т.ID_Категории = к.ID_Категории
+                LEFT JOIN Бренды б ON т.ID_Бренда = б.ID_Бренда
+                WHERE (к.Название IN (${placeholders}) 
+                   OR т.Название LIKE '%${foundKeywords[0]}%' 
+                   OR т.Описание LIKE '%${foundKeywords[0]}%')
+                   AND х.Активен = 1
+                LIMIT 10
+            `;
+
+            db.all(sqlQuery, foundKeywords, (err, rows) => {
+                if (err) {
+                    console.error('Ошибка при запросе к БД:', err.message);
+                    res.send(JSON.stringify({
+                        status: 'yea',
+                        aiResponse: newString,
+                        dbResults: [],
+                        error: 'Ошибка базы данных'
+                    }));
+                } else {
+                    console.log('Результаты из БД:');
+                    console.log(`Найдено товаров: ${rows.length}`);
+
+                    // Успешный ответ с данными из БД
+                    res.send(JSON.stringify({
+                        status: 'yea',
+                        aiResponse: newString,
+                        dbResults: rows,
+                        keywords: foundKeywords
+                    }));
+                }
+            });
+        } else {
+            console.log('Не найдено ключевых слов для поиска в БД');
+            // Отправляем ответ без результатов БД
+            res.send(JSON.stringify({
+                status: 'yea',
+                aiResponse: newString,
+                dbResults: [],
+                keywords: []
+            }));
+        }
     } catch (error) {
         console.error('Hugging Face API error:', error.response ? error.response.data : error.message);
         res.status(500).json({ error: 'Failed to perform inference' });

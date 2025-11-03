@@ -97,7 +97,14 @@ document.addEventListener('DOMContentLoaded', function(){
         }).then(resp => { return resp.json() })
         .then(resp => { 
             console.log(resp);
-            if (resp === "yea") 
+
+            if (typeof resp === 'object' && resp.status === "yea")
+            {
+                alert('Генерация завершена');
+                console.log('Результаты из БД:', resp.dbResults);
+            }
+
+            else if (resp === "yea")
             {
                 alert('Генерация завершена');
             }
