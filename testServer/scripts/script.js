@@ -66,8 +66,51 @@ document.addEventListener('DOMContentLoaded', function(){
         .catch(err => { console.log(err) });
     })
 
+    function addProduct(content) {
+        const display = document.getElementById('products-display');
+        const productDiv = document.createElement('div');
+        const productImg = document.createElement('img');
+        const productInfo = document.createElement('div');
+        const productButton = document.createElement('a');
+        const productInfoP1 = document.createElement('p');
+        const productInfoP2 = document.createElement('p');
+        const productInfoP3 = document.createElement('p');
+        const productInfoP4 = document.createElement('p');
+        productDiv.className = `product-card`;
+         
+        productImg.src = `${content.Ссылка_Изображение}`;
+        productImg.width = "200";
+        productImg.height = "200";
+         
+        productInfo.className = 'product-info';
+        productInfoP1.textContent = `Название: ${content.Название_Товара}`
+        productInfoP2.textContent = `Цвет: ${content.Цвет}`
+        productInfoP3.textContent = `Состав: ${content.Состав}`
+        productInfoP4.textContent = `Цена: ${content.Цена} рублей`
+        productButton.href = `${content.Ссылка_Товар}`;
+        productButton.class = "product-button";
+        productButton.textContent = "Купить"
+        productInfo.appendChild(productInfoP1)
+        productInfo.appendChild(productInfoP2)
+        productInfo.appendChild(productInfoP3)
+        productInfo.appendChild(productInfoP4)
+        productInfo.appendChild(productButton)
+        productDiv.appendChild(productImg);
+        productDiv.appendChild(productInfo);
+        display.appendChild(productDiv)
+    }
+
+    function removeAllChildren(parentElement) {
+      while (parentElement.firstChild) {
+        parentElement.removeChild(parentElement.firstChild);
+      }
+    }
+
     generateButton?.addEventListener('click', function(e) {
         e.preventDefault();
+        const container = document.getElementById('products-display');
+        generateButton.disabled = true
+        removeAllChildren(container);
         let gender = (document.getElementById("gender")?.value);
         let size = (document.getElementById("size")?.value);
         let height = (document.getElementById("height")?.value);
@@ -101,6 +144,13 @@ document.addEventListener('DOMContentLoaded', function(){
             if (typeof resp === 'object' && resp.status === "yea")
             {
                 alert('Генерация завершена');
+                const keys = Object.keys(resp.dbResults);
+                if (keys != null)
+                {   
+                    for (const key of keys) {
+                        addProduct(resp.dbResults[key])
+                    }
+                }
                 console.log('Результаты из БД:', resp.dbResults);
             }
 
@@ -111,6 +161,7 @@ document.addEventListener('DOMContentLoaded', function(){
             else{
                 alert('Ошибка генерации');
             }
+            generateButton.disabled = false;
 
         })
         .catch(err => { console.log(err) });

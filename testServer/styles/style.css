@@ -16,7 +16,7 @@ body {
     display: flex;
     justify-content: center;
     align-items: flex-start;
-    height: 100vh;
+    min-height: 100vh;
     flex-direction: column;
     overflow: auto
 }
@@ -183,8 +183,10 @@ h2 {
 
 .products {
     display: flex;
+    max-width: 1500px;
     gap: 20px;
     justify-content: center;
+    overflow-y: auto;
 }
 
 .product-card {
@@ -210,6 +212,14 @@ h2 {
 
 .product-card button {
     padding: 10px;
+    background-color: #00aaff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+.product-card a {
+    padding: 5px;
     background-color: #00aaff;
     color: white;
     border: none;
