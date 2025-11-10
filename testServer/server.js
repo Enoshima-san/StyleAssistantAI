@@ -143,6 +143,33 @@ app.post('/prompt', async (req, res) => {
 
         if (foundKeywords.length > 0) {
             const placeholders = foundKeywords.map(() => '?').join(',');
+
+            const userGender = message.gender.toLowerCase();
+            let genderCondition = '';
+
+            if (userGender.includes('муж') || userGender.includes('male') || userGender.includes('man')) {
+                genderCondition = `
+                    AND (
+                        х.Гендер LIKE '%Мужской%' OR 
+                        х.Гендер LIKE '%Мальчики%' OR 
+                        х.Гендер LIKE '%Мужской, Женский%' OR
+                        х.Гендер LIKE '%Мальчики, Девочки%' OR
+                        х.Гендер IS NULL
+                    )
+                `;
+            }
+            else if (userGender.includes('жен') || userGender.includes('female') || userGender.includes('woman')) {
+                genderCondition = `
+                    AND (
+                        х.Гендер LIKE '%Женский%' OR 
+                        х.Гендер LIKE '%Девочки%' OR 
+                        х.Гендер LIKE '%Женский, Мужской%' OR
+                        х.Гендер LIKE '%Девочки, Мальчики%' OR
+                        х.Гендер IS NULL
+                    )
+                `;
+            }
+
             const sqlQuery = `
                 SELECT
                     т.ID_Товара,
@@ -162,16 +189,18 @@ app.post('/prompt', async (req, res) => {
                     к.Название AS Категория,
                     б.Название AS Название_Бренда
                 FROM Товары т
-                LEFT JOIN Характеристики_Товаров х ON т.ID_Товара = х.ID_Товара
-                LEFT JOIN Категории к ON т.ID_Категории = к.ID_Категории
-                LEFT JOIN Бренды б ON т.ID_Бренда = б.ID_Бренда
-                WHERE (к.Название IN (${placeholders}) 
-                   OR т.Название LIKE '%${foundKeywords[0]}%' 
-                   OR т.Описание LIKE '%${foundKeywords[0]}%')
+                         LEFT JOIN Характеристики_Товаров х ON т.ID_Товара = х.ID_Товара
+                         LEFT JOIN Категории к ON т.ID_Категории = к.ID_Категории
+                         LEFT JOIN Бренды б ON т.ID_Бренда = б.ID_Бренда
+                WHERE (к.Название IN (${placeholders})
+                    OR т.Название LIKE '%${foundKeywords[0]}%'
+                    OR т.Описание LIKE '%${foundKeywords[0]}%')
+                    ${genderCondition}
                    AND х.Активен = 1
+                ORDER BY RANDOM()
                 LIMIT 10
             `;
-
+            console.log('Found Keywords:', foundKeywords);
             db.all(sqlQuery, foundKeywords, (err, rows) => {
                 if (err) {
                     console.error('Ошибка при запросе к БД:', err.message);
@@ -184,6 +213,9 @@ app.post('/prompt', async (req, res) => {
                 } else {
                     console.log('Результаты из БД:');
                     console.log(`Найдено товаров: ${rows.length}`);
+                    rows.forEach(row => {
+                        console.log(`- ${row.Название_Товара} (Пол: ${row.Гендер})`);
+                    });
 
                     // Успешный ответ с данными из БД
                     res.send(JSON.stringify({
@@ -208,8 +240,8 @@ app.post('/prompt', async (req, res) => {
         console.error('Hugging Face API error:', error.response ? error.response.data : error.message);
         res.status(500).json({ error: 'Failed to perform inference' });
     }
-
 });
+
 // Иницилизация сервера по порту 3000
 const PORT = process.env.PORT
 app.listen(PORT, () => {
