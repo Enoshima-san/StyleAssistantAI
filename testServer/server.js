@@ -106,9 +106,9 @@ app.post('/login', (request, response) => {
 app.post('/prompt', async (req, res) => {
     const message = req.body;
     const testPromt = `Опиши в 20 словах аутфит по следующим характеристикам: Пол-`+
-    `${message.gender}, Размер-${message.size}, Рост-${message.height}, Стиль-${message.style},`+ 
-    `Цвет-${message.color}, Материал-${message.material}, Сезон-${message.season}, Цель-${message.purpose},`+ 
-    `Погода-${message.weather}, Климат-${message.climate}`;
+        `${message.gender}, Размер-${message.size}, Рост-${message.height}, Стиль-${message.style},`+
+        `Цвет-${message.color}, Материал-${message.material}, Сезон-${message.season}, Цель-${message.purpose},`+
+        `Погода-${message.weather}, Климат-${message.climate}`;
     console.log(testPromt)
     const HUGGING_FACE_TOKEN = process.env.API_KEY;
     const client = new InferenceClient(HUGGING_FACE_TOKEN)
@@ -152,9 +152,10 @@ app.post('/prompt', async (req, res) => {
                     AND (
                         х.Гендер LIKE '%Мужской%' OR 
                         х.Гендер LIKE '%Мальчики%' OR 
+                        х.Гендер LIKE '%male%' OR 
+                        х.Гендер LIKE '%man%' OR
                         х.Гендер LIKE '%Мужской, Женский%' OR
-                        х.Гендер LIKE '%Мальчики, Девочки%' OR
-                        х.Гендер IS NULL
+                        х.Гендер LIKE '%Мальчики, Девочки%'
                     )
                 `;
             }
@@ -163,12 +164,48 @@ app.post('/prompt', async (req, res) => {
                     AND (
                         х.Гендер LIKE '%Женский%' OR 
                         х.Гендер LIKE '%Девочки%' OR 
+                        х.Гендер LIKE '%female%' OR 
+                        х.Гендер LIKE '%woman%' OR
                         х.Гендер LIKE '%Женский, Мужской%' OR
                         х.Гендер LIKE '%Девочки, Мальчики%' OR
                         х.Гендер IS NULL
                     )
                 `;
             }
+
+            const userColor = message.color ? message.color.toLowerCase() : 'любой';
+            const userMaterial = message.material ? message.material.toLowerCase() : 'любой';
+
+            let orderByConditions = [];
+
+            if (userColor !== 'любой' && userMaterial !== 'любой') {
+                orderByConditions.push(`
+                    CASE 
+                        WHEN (LOWER(х.Цвет) LIKE '%${userColor}%' AND LOWER(х.Состав) LIKE '%${userMaterial}%') THEN 1
+                        WHEN (LOWER(х.Цвет) LIKE '%${userColor}%' OR LOWER(х.Состав) LIKE '%${userMaterial}%') THEN 2
+                        ELSE 3
+                    END
+                `);
+            } else if (userColor !== 'любой') {
+                orderByConditions.push(`
+                    CASE 
+                        WHEN LOWER(х.Цвет) LIKE '%${userColor}%' THEN 1
+                        ELSE 2
+                    END
+                `);
+            } else if (userMaterial !== 'любой') {
+                orderByConditions.push(`
+                    CASE 
+                        WHEN LOWER(х.Состав) LIKE '%${userMaterial}%' THEN 1
+                        ELSE 2
+                    END
+                `);
+            }
+            orderByConditions.push('RANDOM()');
+
+            const orderByClause = orderByConditions.length > 0 ?
+                `ORDER BY ${orderByConditions.join(', ')}` :
+                'ORDER BY RANDOM()';
 
             const sqlQuery = `
                 SELECT
@@ -189,18 +226,18 @@ app.post('/prompt', async (req, res) => {
                     к.Название AS Категория,
                     б.Название AS Название_Бренда
                 FROM Товары т
-                         LEFT JOIN Характеристики_Товаров х ON т.ID_Товара = х.ID_Товара
-                         LEFT JOIN Категории к ON т.ID_Категории = к.ID_Категории
-                         LEFT JOIN Бренды б ON т.ID_Бренда = б.ID_Бренда
-                WHERE (к.Название IN (${placeholders})
-                    OR т.Название LIKE '%${foundKeywords[0]}%'
-                    OR т.Описание LIKE '%${foundKeywords[0]}%')
-                    ${genderCondition}
+                LEFT JOIN Характеристики_Товаров х ON т.ID_Товара = х.ID_Товара
+                LEFT JOIN Категории к ON т.ID_Категории = к.ID_Категории
+                LEFT JOIN Бренды б ON т.ID_Бренда = б.ID_Бренда
+                WHERE (к.Название IN (${placeholders}) 
+                   OR т.Название LIKE '%${foundKeywords[0]}%' 
+                   OR т.Описание LIKE '%${foundKeywords[0]}%')
+                   ${genderCondition}
                    AND х.Активен = 1
-                ORDER BY RANDOM()
+                ${orderByClause}
                 LIMIT 10
             `;
-            console.log('Found Keywords:', foundKeywords);
+
             db.all(sqlQuery, foundKeywords, (err, rows) => {
                 if (err) {
                     console.error('Ошибка при запросе к БД:', err.message);
@@ -208,14 +245,24 @@ app.post('/prompt', async (req, res) => {
                         status: 'yea',
                         aiResponse: newString,
                         dbResults: [],
-                        error: 'Ошибка базы данных'
+                        error: 'Ошибка базы данных: ' + err.message
                     }));
                 } else {
                     console.log('Результаты из БД:');
                     console.log(`Найдено товаров: ${rows.length}`);
-                    rows.forEach(row => {
-                        console.log(`- ${row.Название_Товара} (Пол: ${row.Гендер})`);
-                    });
+
+                    if (rows.length > 0) {
+                        const perfectMatch = rows.filter(row =>
+                            (userColor === 'любой' || (row.Цвет && row.Цвет.toLowerCase().includes(userColor))) &&
+                            (userMaterial === 'любой' || (row.Состав && row.Состав.toLowerCase().includes(userMaterial)))
+                        );
+
+                        const partialMatch = rows.filter(row =>
+                            (userColor !== 'любой' && row.Цвет && row.Цвет.toLowerCase().includes(userColor)) ||
+                            (userMaterial !== 'любой' && row.Состав && row.Состав.toLowerCase().includes(userMaterial))
+                        );
+
+                    }
 
                     // Успешный ответ с данными из БД
                     res.send(JSON.stringify({
