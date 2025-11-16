@@ -5,6 +5,8 @@ import cors from 'cors';
 import sqlite3 from 'sqlite3'
 import dotenv from 'dotenv'
 import { randomUUID } from 'crypto';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 
 dotenv.config({ path: './.env' });
 
@@ -28,74 +30,92 @@ app.use(express.urlencoded({ extended: true }))
 
 
 // Получение данных на сервер и вставка их в базу данных
-app.post('/registration', (request, response) => {
+app.post('/registration', async (request, response) => {
     const data = request.body
-    let flag = "bad";
-
     // Проверяем, существует ли пользователь с такой почтой
-    db.get('SELECT * FROM Пользователи WHERE Почта = ?', [data.usermail], (err, row) => {
+    bcrypt.genSalt(10, (err, salt) => {
         if (err) {
             console.error(err.message);
             response.status(400);
-            response.send(JSON.stringify(flag));
             response.end();
-            return;
         }
-
-        if (row) {
-            // Пользователь уже существует
-            console.log("User already exists:", data.usermail);
-            response.status(400);
-            response.send(JSON.stringify(flag));
-            response.end();
-            return;
-        }
-
-        // Новый пользователь
-        const userId = randomUUID();
-        const currentDate = new Date().toISOString();
-
-        db.run('INSERT INTO Пользователи (ID_Пользователя, Почта, Пароль, Имя, Дата_Регистрации) VALUES (?, ?, ?, ?, ?)',
-            [userId, data.usermail, data.password, data.username, currentDate],
-            (err) => {
+        bcrypt.hash(data.password, salt, (err, hash) => {
+            if (err) {
+                console.error(err.message);
+                response.status(400);
+                response.end();
+            }
+            db.get('SELECT * FROM Пользователи WHERE Почта = ?', [data.usermail], (err, row) => {
                 if (err) {
                     console.error(err.message);
                     response.status(400);
-                    response.send(JSON.stringify(flag));
                     response.end();
-                } else {
-                    flag = "yea";
-                    console.log("User registered successfully:", data.usermail);
-                    response.status(201);
-                    response.send(JSON.stringify(flag));
-                    response.end();
+                    return;
                 }
-            }
-        );
+            
+                if (row) {
+                    // Пользователь уже существует
+                    console.log("User already exists:", data.usermail);
+                    response.status(400);
+                    response.end();
+                    return;
+                }
+            
+                // Новый пользователь
+                const userId = randomUUID();
+                const currentDate = new Date().toISOString();
+            
+                db.run('INSERT INTO Пользователи (ID_Пользователя, Почта, Пароль, Имя, Дата_Регистрации) VALUES (?, ?, ?, ?, ?)',
+                    [userId, data.usermail, hash, data.username, currentDate],
+                    (err) => {
+                        if (err) {
+                            console.error(err.message);
+                            response.status(400);
+                            response.end();
+                        } else {
+                            console.log("User registered successfully:", data.usermail);
+                            response.status(201);
+                            response.end();
+                        }
+                    }
+                );
+            });
+        });
     });
 });
 
 // Получение данных на сервер и сверка их с существующими в базе данных
-app.post('/login', (request, response) => {
+app.post('/login', async (request, response) => {
     const data = request.body;
-    let flag = "bad";
-
-    db.get('SELECT ID_Пользователя, Имя FROM Пользователи WHERE Почта = ? AND Пароль = ?',
-        [data.usermail, data.password],
+    db.get('SELECT ID_Пользователя as userId, Имя as userName, Пароль as hashedPassword FROM Пользователи WHERE Почта = ?',
+        [data.usermail],
         (err, row) => {
             if (err) {
                 console.error(err.message);
                 response.status(400);
-                response.send(JSON.stringify(flag));
                 response.end();
             } else {
                 if (row) {
-                    console.log("Login successful for user:", data.usermail);
-                    flag = "yea";
+                    const storedHash = row.hashedPassword;
+                    bcrypt.compare(data.password, storedHash, (err, result) => {
+                        if (err) {
+                            console.error(err.message);
+                            response.status(400);
+                            response.end();
+                        }
+                        if (result) {
+                            console.log("Login successful for user:", data.usermail);
+                            const token = jwt.sign({ userId: row.userId, username: row.userName }, process.env.SECRET_KEY, { expiresIn: '1h' });
+                            response.json({ token, message: 'Вход успешен' });
+                            response.status(201);
+                            response.end();
+                        } else {
+                            console.error(err.message);
+                            response.status(400);
+                            response.end();
+                        }
+                    });
                 }
-                response.status(201);
-                response.send(JSON.stringify(flag));
-                response.end();
             }
         }
     );
@@ -287,6 +307,25 @@ app.post('/prompt', async (req, res) => {
         console.error('Hugging Face API error:', error.response ? error.response.data : error.message);
         res.status(500).json({ error: 'Failed to perform inference' });
     }
+});
+
+// Проверка токена на подлинность
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];  // Bearer TOKEN
+    if (!token) {
+      return res.status(401).json({ error: 'Доступ запрещен' });
+    }   
+    jwt.verify(token, process.env.SECRET_KEY, (err, user) => {
+      if (err) return res.status(403).json({ error: 'Неверный токен' });
+      req.user = user;
+      next();
+    });
+};
+
+// Доступ к функциям авторизированных пользователей
+app.get('/protected', authenticateToken, (req, res) => {
+    res.json({ message: `Привет, ${req.user.username}! Это защищенный контент.` });
 });
 
 // Иницилизация сервера по порту 3000

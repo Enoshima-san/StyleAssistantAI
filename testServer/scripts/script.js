@@ -3,6 +3,17 @@ document.addEventListener('DOMContentLoaded', function(){
     const registerForm = document.getElementById('registerForm');
     const generateButton = document.getElementById('generateButton');
     const tabButtons = document.getElementById('.tab-button');
+    const sessionToken = sessionStorage.getItem('token');
+    const profilePage = document.getElementById('userProfile');
+
+    // Функция для запросов
+    async function apiRequest(url, options = {}) {
+      const token = sessionStorage.getItem('token');
+      console.log(token);
+      if (token) options.headers = { ...options.headers, 'Authorization': `Bearer ${token}` };
+      const response = await fetch(url, options);
+      return response;
+    }
 
     registerForm?.addEventListener('submit', function(e) {
         e.preventDefault();
@@ -21,12 +32,11 @@ document.addEventListener('DOMContentLoaded', function(){
             'Content-Type': 'application/json;charset=utf-8'
           },
          body: JSON.stringify(newPost)
-        }).then(resp => { return resp.json() })
-        .then(resp => { 
-            console.log(resp);
-            if (resp === "yea") 
+        }).then(resp => { 
+            if (resp.ok) 
             {
                 alert('Регистрация завершена');
+                window.location.replace('releasePage.HTML');
             }
             else{
                 alert('Ошибка регистрации');
@@ -36,34 +46,29 @@ document.addEventListener('DOMContentLoaded', function(){
     })
 
     // отправка на сервер данных со страницы входа 
-    loginForm?.addEventListener('submit', function(e) {
+    loginForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
         let usermail = (document.getElementById("email").value);
         let password = (document.getElementById("password").value);
-        const newPost = 
-        {
-            usermail,password
-        }
-        fetch('http://localhost:3000/login', 
-        {
-         method: 'POST',
-         headers: {
-            'Content-Type': 'application/json;charset=utf-8'
-          },
-         body: JSON.stringify(newPost)
-        }).then(resp => { return resp.json() })
-        .then(resp => { 
-            console.log(resp);
-            if (resp === "yea") 
+        try {
+            const response = await fetch('http://localhost:3000/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json;charset=utf-8' },
+                body: JSON.stringify({ usermail, password })
+        });
+        
+        const data = await response.json();
+        if (response.ok) 
             {
+                sessionStorage.setItem('token', data.token);
                 alert('Авторизация завершена');
+                window.location.replace('releasePageGen.HTML');
             }
-            else{
+        else{
                 alert('Ошибка авторизации');
             }
 
-        })
-        .catch(err => { console.log(err) });
+        } catch(error) {console.log(error)}
     })
 
     function addProduct(content) {
@@ -106,7 +111,7 @@ document.addEventListener('DOMContentLoaded', function(){
       }
     }
 
-    generateButton?.addEventListener('click', function(e) {
+    generateButton?.addEventListener('click', async(e) => {
         e.preventDefault();
         const container = document.getElementById('products-display');
         generateButton.disabled = true
@@ -125,48 +130,54 @@ document.addEventListener('DOMContentLoaded', function(){
         let purpose = (document.getElementById("purpose")?.value) || "Любой";
         let weather = (document.getElementById("weather")?.value) || "Любая";
         let climate = (document.getElementById("climate")?.value) || "Любой";
-        const newPost = 
-        {
-            gender,size,height,style,color,material,season,purpose,weather,climate
-        }
-        console.log(newPost)
-        fetch('http://localhost:3000/prompt', 
-        {
-         method: 'POST',
-         headers: {
-            'Content-Type': 'application/json;charset=utf-8'
-          },
-         body: JSON.stringify(newPost)
-        }).then(resp => { return resp.json() })
-        .then(resp => { 
-            console.log(resp);
-
-            if (typeof resp === 'object' && resp.status === "yea")
+        try {
+            const resp = await apiRequest('http://localhost:3000/protected');
+            if (resp.ok)
             {
-                alert('Генерация завершена');
-                const keys = Object.keys(resp.dbResults);
-                if (keys != null)
-                {   
-                    for (const key of keys) {
-                        addProduct(resp.dbResults[key])
+                const response = await fetch('http://localhost:3000/prompt', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json;charset=utf-8'
+                    },
+                    body: JSON.stringify({gender,size,height,style,color,material,season,purpose,weather,climate})
+                });
+                const data = await response.json();
+                if (response.ok) 
+                {
+                    alert('Генерация завершена');
+                    const keys = Object.keys(data.dbResults);
+                    if (keys != null)
+                    {   
+                        for (const key of keys) {
+                            addProduct(data.dbResults[key])
+                        }
                     }
+                    console.log('Результаты из БД:', data.dbResults);
                 }
-                console.log('Результаты из БД:', resp.dbResults);
-            }
-
-            else if (resp === "yea")
-            {
-                alert('Генерация завершена');
+                else{
+                    alert('Ошибка генерации');
+                }
+                generateButton.disabled = false;
             }
             else{
-                alert('Ошибка генерации');
+                alert('Ошибка доступа')
+                generateButton.disabled = false;
             }
-            generateButton.disabled = false;
-
-        })
-        .catch(err => { console.log(err) });
+        } catch(error) {console.log(error)}
     })
-    
+
+    // Доступ к странице профиля
+    profilePage?.addEventListener('click', async (e) => {
+    e.preventDefault();
+    try {
+      const data = await apiRequest('http://localhost:3000/protected');
+      console.log(data.message);
+    } catch (error) {
+      console.log(error);
+      sessionStorage.removeItem('token');
+    }
+    });
+
     tabButtons?.forEach(button => {
     button.addEventListener('click', () => {
         tabButtons.forEach(btn => btn.classList.remove('active'));
