@@ -3,8 +3,14 @@ document.addEventListener('DOMContentLoaded', function(){
     const registerForm = document.getElementById('registerForm');
     const generateButton = document.getElementById('generateButton');
     const tabButtons = document.getElementById('.tab-button');
-    const sessionToken = sessionStorage.getItem('token');
     const profilePage = document.getElementById('userProfile');
+    const favoritePage = document.getElementById('favorite');
+    const catalogPage = document.getElementById('catalog');
+    const generatePage = document.getElementById('recomendation');
+    const heartButtons = document.querySelectorAll('.heart-icon');
+    const likeDislikeButtons = document.querySelectorAll('.action-button');
+    const logOutButton = document.getElementById('log-out');
+
 
     // Функция для запросов
     async function apiRequest(url, options = {}) {
@@ -172,6 +178,59 @@ document.addEventListener('DOMContentLoaded', function(){
     try {
       const data = await apiRequest('http://localhost:3000/protected');
       console.log(data.message);
+      if (data.ok)
+      {
+        window.location.replace('profilePage.HTML');
+      }
+      else{alert('Ошибка генерации');}
+    } catch (error) {
+      console.log(error);
+      sessionStorage.removeItem('token');
+    }
+    });
+
+    catalogPage?.addEventListener('click', async (e) => {
+    e.preventDefault();
+    try {
+      const data = await apiRequest('http://localhost:3000/protected');
+      console.log(data.message);
+      if (data.ok)
+      {
+        window.location.replace('catalogPage.HTML');
+      }
+      else{alert('Ошибка генерации');}
+    } catch (error) {
+      console.log(error);
+      sessionStorage.removeItem('token');
+    }
+    });
+
+    favoritePage?.addEventListener('click', async (e) => {
+    e.preventDefault();
+    try {
+      const data = await apiRequest('http://localhost:3000/protected');
+      console.log(data.message);
+      if (data.ok)
+      {
+        window.location.replace('favoritePage.HTML');
+      }
+      else{alert('Ошибка генерации');}
+    } catch (error) {
+      console.log(error);
+      sessionStorage.removeItem('token');
+    }
+    });
+
+    generatePage?.addEventListener('click', async (e) => {
+    e.preventDefault();
+    try {
+      const data = await apiRequest('http://localhost:3000/protected');
+      console.log(data.message);
+      if (data.ok)
+      {
+        window.location.replace('releasePageGen.HTML');
+      }
+      else{alert('Ошибка генерации');}
     } catch (error) {
       console.log(error);
       sessionStorage.removeItem('token');
@@ -184,66 +243,34 @@ document.addEventListener('DOMContentLoaded', function(){
         button.classList.add('active');
     });
     });
-    function initializeCatalogPage() {
-        console.log('Инициализация страницы каталога');
 
-        document.querySelectorAll('.tab-button').forEach(button => {
-            button.addEventListener('click', function() {
-                document.querySelectorAll('.tab-button').forEach(btn => {
-                    btn.classList.remove('active');
-                });
-                this.classList.add('active');
-            });
+    heartButtons?.forEach(button => {
+        button.addEventListener('click', () => {
+            button.classList.toggle('active');
         });
+    });
 
-        document.querySelectorAll('.heart-icon').forEach(heart => {
-            heart.addEventListener('click', function() {
-                this.classList.toggle('active');
-            });
-        });
-
-        document.querySelectorAll('.action-button').forEach(button => {
-            button.addEventListener('click', function() {
-                const card = this.closest('.outfit-card');
+    likeDislikeButtons?.forEach(button => {
+        button.addEventListener('click', function() {
+            const card = this.closest('.outfit-card');
+            setTimeout(() => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
                 setTimeout(() => {
-                    card.style.opacity = '0';
-                    card.style.transform = 'translateY(20px)';
-
-                    setTimeout(() => {
-                        card.remove();
-
-                        if (document.querySelectorAll('.outfit-card').length === 0) {
-                            const outfitsContainer = document.querySelector('.outfits');
-                            outfitsContainer.innerHTML = '<p style="text-align: center; padding: 40px; color: #666;">Нет образов для оценки</p>';
-                        }
-                    }, 300);
+                    card.remove();
+                    if (document.querySelectorAll('.outfit-card').length === 0) {
+                        const outfitsContainer = document.querySelector('.outfits');
+                        outfitsContainer.innerHTML = '<p style="text-align: center; padding: 40px; color: #666;">Нет образов для оценки</p>';
+                    }
                 }, 300);
-            });
+            }, 300);
         });
-    }
+    });
 
-    function initializeFavoritesPage() {
-        console.log('Инициализация страницы избранного');
-        document.querySelectorAll('.tab-button').forEach(button => {
-            button.addEventListener('click', function() {
-                document.querySelectorAll('.tab-button').forEach(btn => {
-                    btn.classList.remove('active');
-                });
-                this.classList.add('active');
-            });
-        });
-
-        document.querySelectorAll('.heart-icon').forEach(heart => {
-            heart.addEventListener('click', function() {
-                this.classList.toggle('active');
-            });
-        });
-    }
-
-    if (document.querySelector('.outfit-actions')) {
-        initializeCatalogPage();
-    } else if (document.querySelector('.outfit-card') && !document.querySelector('.outfit-actions')) {
-        initializeFavoritesPage();
-    }
+    logOutButton.addEventListener('click', (e) => {
+    e.preventDefault();
+    sessionStorage.removeItem('token');
+    window.location.replace('releasePage.HTML');
+    });
 });
 
