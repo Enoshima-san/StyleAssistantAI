@@ -315,13 +315,86 @@ const authenticateToken = (req, res, next) => {
     const token = authHeader && authHeader.split(' ')[1];  // Bearer TOKEN
     if (!token) {
       return res.status(401).json({ error: 'Доступ запрещен' });
-    }   
+    }
     jwt.verify(token, process.env.SECRET_KEY, (err, user) => {
       if (err) return res.status(403).json({ error: 'Неверный токен' });
       req.user = user;
       next();
     });
 };
+
+app.post('/save-profile', authenticateToken, async (request, response) => {
+    const userId = request.user.userId;
+    const data = request.body;
+
+    db.get('SELECT * FROM Профили_Пользователей WHERE ID_Пользователя = ?', [userId], (err, row) => {
+        if (err) {
+            console.error('Ошибка при проверке профиля:', err.message);
+            response.status(500).json({ error: 'Ошибка базы данных' });
+            return;
+        }
+
+        const currentDate = new Date().toISOString();
+
+        if (row) {
+            const sql = `UPDATE Профили_Пользователей 
+                        SET О_Себе = ?, Стиль = ?, Цвет = ?, Материал = ?, 
+                            Рост = ?, Размер_Одежды = ?, Пол = ?, Дата_Обновления = ?
+                        WHERE ID_Пользователя = ?`;
+
+            db.run(sql, [
+                data.about, data.style, data.color, data.material,
+                data.height, data.size, data.gender, currentDate, userId
+            ], (err) => {
+                if (err) {
+                    console.error('Ошибка при обновлении профиля:', err.message);
+                    response.status(500).json({ error: 'Ошибка обновления профиля' });
+                } else {
+                    console.log("Профиль обновлен для пользователя:", userId);
+                    response.json({ message: 'Профиль успешно обновлен' });
+                }
+            });
+        } else {
+            const sql = `INSERT INTO Профили_Пользователей 
+                        (ID_Пользователя, О_Себе, Стиль, Цвет, Материал, Рост, Размер_Одежды, Пол, Дата_Обновления)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+            db.run(sql, [
+                userId, data.about, data.style, data.color, data.material,
+                data.height, data.size, data.gender, currentDate
+            ], (err) => {
+                if (err) {
+                    console.error('Ошибка при создании профиля:', err.message);
+                    response.status(500).json({ error: 'Ошибка сохранения профиля' });
+                } else {
+                    console.log("Профиль создан для пользователя:", userId);
+                    response.json({ message: 'Профиль успешно сохранен' });
+                }
+            });
+        }
+    });
+});
+
+// Получение данных пользователя
+app.get('/user-data', authenticateToken, (req, res) => {
+    const userId = req.user.userId;
+
+    db.get('SELECT Имя, Почта FROM Пользователи WHERE ID_Пользователя = ?', [userId], (err, row) => {
+        if (err) {
+            console.error('Ошибка при получении данных пользователя:', err.message);
+            return res.status(500).json({ error: 'Ошибка базы данных' });
+        }
+
+        if (!row) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+
+        res.json({
+            name: row.Имя,
+            email: row.Почта
+        });
+    });
+});
 
 // Доступ к функциям авторизированных пользователей
 app.get('/protected', authenticateToken, (req, res) => {

@@ -116,7 +116,28 @@ document.addEventListener('DOMContentLoaded', function(){
         parentElement.removeChild(parentElement.firstChild);
       }
     }
+    async function loadUserData() {
+        try {
+            const response = await apiRequest('http://localhost:3000/user-data');
+            if (response.ok) {
+                const userData = await response.json();
 
+                document.getElementById('userName').textContent = userData.name;
+                document.getElementById('userEmail').textContent = userData.email;
+
+                console.log('Данные пользователя загружены:', userData);
+            } else {
+                console.error('Ошибка при загрузке данных пользователя');
+            }
+        } catch (error) {
+            console.error('Ошибка при загрузке данных пользователя:', error);
+        }
+    }
+
+    if (window.location.pathname.includes('profilePage.html') ||
+        document.querySelector('.user-info')) {
+        loadUserData();
+    }
     generateButton?.addEventListener('click', async(e) => {
         e.preventDefault();
         const container = document.getElementById('products-display');
@@ -272,5 +293,54 @@ document.addEventListener('DOMContentLoaded', function(){
     sessionStorage.removeItem('token');
     window.location.replace('releasePage.HTML');
     });
+
+    const saveButton = document.querySelector('.save');
+    saveButton?.addEventListener('click', async (e) => {
+        e.preventDefault();
+
+        const token = sessionStorage.getItem('token');
+
+        if (!token) {
+            alert('Токен не найден. Пожалуйста, войдите снова.');
+            window.location.replace('releasePage.HTML');
+            return;
+        }
+
+        const profileData = {
+            about: document.getElementById('about')?.value || '',
+            style: document.querySelectorAll('.user-style input[type="text"]')[0]?.value || '',
+            color: document.querySelectorAll('.user-style input[type="text"]')[1]?.value || '',
+            material: document.querySelectorAll('.user-style input[type="text"]')[2]?.value || '',
+            height: document.querySelectorAll('.user-params input[type="text"]')[0]?.value || '',
+            size: document.querySelectorAll('.user-params input[type="text"]')[1]?.value || '',
+            gender: document.querySelectorAll('.user-params input[type="text"]')[2]?.value || ''
+        };
+
+        try {
+            const response = await apiRequest('http://localhost:3000/save-profile', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(profileData)
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                alert('Профиль успешно сохранен!');
+                console.log('Профиль сохранен:', result);
+            } else {
+                console.log('Статус ответа:', response.status);
+                const errorText = await response.text();
+                console.log('Текст ошибки:', errorText);
+                alert('Ошибка при сохранении профиля: ' + response.status);
+            }
+        } catch (error) {
+            console.error('Ошибка сети:', error);
+            alert('Ошибка сети при сохранении профиля');
+        }
+    });
+
+
 });
 
