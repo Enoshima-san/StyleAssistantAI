@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', function(){
     const heartButtons = document.querySelectorAll('.heart-icon');
     const likeDislikeButtons = document.querySelectorAll('.action-button');
     const logOutButton = document.getElementById('log-out');
+    const saveButton = document.querySelector('.save');
 
 
     // Функция для запросов
@@ -110,6 +111,70 @@ document.addEventListener('DOMContentLoaded', function(){
         productDiv.appendChild(productInfo);
         display.appendChild(productDiv)
     }
+        // Добавление карточки товара на странице каталога
+      function addProductCatalog(content) {
+        const display = document.getElementById('outfits-display');
+        const productDiv = document.createElement('div');
+        const productInfoHeader = document.createElement('div');
+        const productInfoGrid = document.createElement('div');
+        const productInfo = document.createElement('div');
+        const productButtons = document.createElement('div');
+        const productButtonHeart = document.createElement('div');
+        const productImg = document.createElement('img');
+        const productBuy = document.createElement('a');
+        const productButtonLike = document.createElement('button');
+        const productButtonDislike = document.createElement('button');
+        const productInfoP2 = document.createElement('p');
+        const productInfoP3 = document.createElement('p');
+        const productInfoP4 = document.createElement('p');
+        const productInfoTitle = document.createElement('h3');
+    
+
+        productDiv.className = `outfit-card`;
+        productInfoHeader.className = `outfit-header`;
+        productInfoGrid.className = `outfit-grid-added`;
+        productButtons.className = `outfit-actions`;
+
+        productInfoTitle.className = `outfit-title`;
+        productButtonHeart.className = `heart-icon`;
+
+        productInfoTitle.innerHTML  = `Название: ${content.Название_Товара}`;
+        productButtonHeart.innerHTML  = `♥`;
+
+        productInfo.className = 'outfit-item-added';
+        productBuy.className = "outfit-button-added";
+        productInfoP2.textContent = `Цвет: ${content.Цвет}`
+        productInfoP3.textContent = `Состав: ${content.Состав}`
+        productInfoP4.textContent = `Цена: ${content.Цена} рублей`
+        productImg.src = `${content.Ссылка_Изображение}`;
+        productImg.width = "200";
+        productImg.height = "200";
+        productBuy.href = `${content.Ссылка_Товар}`;
+        productBuy.textContent = "Купить"
+
+        productButtonLike.className = `action-button like-button`;
+        productButtonDislike.className = `action-button dislike-button`;
+
+        productButtonLike.innerHTML  = "👍 Лайк";
+        productButtonDislike.innerHTML  = "👎 Дизлайк";
+
+        productInfoHeader.appendChild(productInfoTitle);
+        productInfoHeader.appendChild(productButtonHeart);
+        productInfo.appendChild(productImg);
+        productInfo.appendChild(productInfoP2);
+        productInfo.appendChild(productInfoP3);
+        productInfo.appendChild(productInfoP4);
+        productInfo.appendChild(productBuy);
+        productInfo.appendChild(productBuy);
+        productInfoGrid.appendChild(productInfo);
+        productButtons.appendChild(productButtonLike);
+        productButtons.appendChild(productButtonDislike);
+        productDiv.appendChild(productInfoHeader);
+        productDiv.appendChild(productInfoGrid);
+        productDiv.appendChild(productButtons);
+        display.appendChild(productDiv)
+
+    }
 
     function removeAllChildren(parentElement) {
       while (parentElement.firstChild) {
@@ -121,10 +186,66 @@ document.addEventListener('DOMContentLoaded', function(){
             const response = await apiRequest('http://localhost:3000/user-data');
             if (response.ok) {
                 const userData = await response.json();
+                
+                if(document.querySelector('.user-info')) {
+                    document.getElementById('userName').textContent = userData.name;
+                    document.getElementById('userEmail').textContent = userData.email;
+                }
+                document.getElementById('style').value = userData.style || "";
+                document.getElementById('color').value = userData.color || "";
+                document.getElementById('material').value = userData.material || "";
 
-                document.getElementById('userName').textContent = userData.name;
-                document.getElementById('userEmail').textContent = userData.email;
+                document.getElementById('height').value = userData.height || "";
+                document.getElementById('size').value = userData.size || "";
+                document.getElementById('gender').value = userData.gender || "";
 
+                console.log('Данные пользователя загружены:', userData);
+            } else {
+                console.error('Ошибка при загрузке данных пользователя');
+            }
+        } catch (error) {
+            console.error('Ошибка при загрузке данных пользователя:', error);
+        }
+    }
+    // Загрузка товаров на странице каталога
+      async function loadUserDataCatalog() {
+        try {
+            const response = await apiRequest('http://localhost:3000/user-data');
+            if (response.ok) {
+                const userData = await response.json();
+                let gender = userData.gender || 'Женский';
+                let size = userData.size || '45';
+                let height = userData.height  ||'165';
+                let style = userData.style || 'Повседневный';
+                let color = userData.color || "Любой";
+                let material = userData.material || "Любой";
+                let season = "Любой";
+                let purpose = "Любой";
+                let weather = "Любая";
+                let climate = "Любой";
+                const resp = await fetch('http://localhost:3000/prompt', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json;charset=utf-8'
+                    },
+                    body: JSON.stringify({gender,size,height,style,color,material,season,purpose,weather,climate})
+                });
+                const data = await resp.json();
+                if (resp.ok) 
+                {
+                    alert('Генерация завершена');
+                    const keys = Object.keys(data.dbResults);
+                    if (keys != null)
+                    {   
+                        for (const key of keys) {
+                            addProductCatalog(data.dbResults[key])
+                        }
+                    }
+                    console.log('Результаты из БД:', data.dbResults);
+                }
+                else{
+                    alert('Ошибка генерации');
+                }
                 console.log('Данные пользователя загружены:', userData);
             } else {
                 console.error('Ошибка при загрузке данных пользователя');
@@ -135,9 +256,19 @@ document.addEventListener('DOMContentLoaded', function(){
     }
 
     if (window.location.pathname.includes('profilePage.html') ||
-        document.querySelector('.user-info')) {
+        document.querySelector('.user-info') || window.location.pathname.includes('releasePageGen.html') || document.querySelector('.form-section')) {
         loadUserData();
     }
+    // Выполнение функций при заходе на страницу каталога
+    if (window.location.pathname.includes('catalogPage.html') ||
+        document.querySelector('.outfits')) {
+        const container = document.querySelector('.outfits');
+        removeAllChildren(container);
+        loadUserDataCatalog();
+    }
+
+
+
     generateButton?.addEventListener('click', async(e) => {
         e.preventDefault();
         const container = document.getElementById('products-display');
@@ -288,13 +419,12 @@ document.addEventListener('DOMContentLoaded', function(){
         });
     });
 
-    logOutButton.addEventListener('click', (e) => {
+    logOutButton?.addEventListener('click', (e) => {
     e.preventDefault();
     sessionStorage.removeItem('token');
     window.location.replace('releasePage.HTML');
     });
 
-    const saveButton = document.querySelector('.save');
     saveButton?.addEventListener('click', async (e) => {
         e.preventDefault();
 
@@ -307,13 +437,13 @@ document.addEventListener('DOMContentLoaded', function(){
         }
 
         const profileData = {
-            about: document.getElementById('about')?.value || '',
-            style: document.querySelectorAll('.user-style input[type="text"]')[0]?.value || '',
-            color: document.querySelectorAll('.user-style input[type="text"]')[1]?.value || '',
-            material: document.querySelectorAll('.user-style input[type="text"]')[2]?.value || '',
-            height: document.querySelectorAll('.user-params input[type="text"]')[0]?.value || '',
-            size: document.querySelectorAll('.user-params input[type="text"]')[1]?.value || '',
-            gender: document.querySelectorAll('.user-params input[type="text"]')[2]?.value || ''
+            about: document.getElementById('about')?.value || 'Пользователь',
+            style: document.querySelectorAll('.user-style input[type="text"]')[0]?.value || 'Любой',
+            color: document.querySelectorAll('.user-style input[type="text"]')[1]?.value || 'Любой',
+            material: document.querySelectorAll('.user-style input[type="text"]')[2]?.value || 'Любой',
+            height: document.querySelectorAll('.user-params input[type="text"]')[0]?.value || 'Любой',
+            size: document.querySelectorAll('.user-params input[type="text"]')[1]?.value || 'Любой',
+            gender: document.querySelectorAll('.user-params input[type="text"]')[2]?.value || 'Любой'
         };
 
         try {

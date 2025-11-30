@@ -379,7 +379,7 @@ app.post('/save-profile', authenticateToken, async (request, response) => {
 app.get('/user-data', authenticateToken, (req, res) => {
     const userId = req.user.userId;
 
-    db.get('SELECT Имя, Почта FROM Пользователи WHERE ID_Пользователя = ?', [userId], (err, row) => {
+    db.get('SELECT Имя, Почта, Стиль, Цвет, Материал, Рост, Размер_Одежды, Пол FROM Пользователи INNER JOIN Профили_Пользователей ON Пользователи.ID_Пользователя=Профили_Пользователей.ID_Пользователя WHERE Пользователи.ID_Пользователя = ?', [userId], (err, row) => {
         if (err) {
             console.error('Ошибка при получении данных пользователя:', err.message);
             return res.status(500).json({ error: 'Ошибка базы данных' });
@@ -391,7 +391,13 @@ app.get('/user-data', authenticateToken, (req, res) => {
 
         res.json({
             name: row.Имя,
-            email: row.Почта
+            email: row.Почта,
+            style: row.Стиль,
+            color: row.Цвет,
+            material: row.Материал,
+            height: row.Рост,
+            size: row.Размер_Одежды,
+            gender: row.Пол
         });
     });
 });
