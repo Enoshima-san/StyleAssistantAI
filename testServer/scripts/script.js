@@ -267,8 +267,6 @@ document.addEventListener('DOMContentLoaded', function(){
         loadUserDataCatalog();
     }
 
-
-
     generateButton?.addEventListener('click', async(e) => {
         e.preventDefault();
         const container = document.getElementById('products-display');
