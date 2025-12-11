@@ -517,3 +517,21 @@ h2 {
     bottom: 0; 
     transform: translateX(285%);
 }
+
+.save-outfit {
+    width: 100%;
+    padding: 12px;
+    background-color: #66c4bf;
+    border: none;
+    border-radius: 5px;
+    color: rgb(0, 0, 0);
+    font-size: 1rem;
+    cursor: pointer;
+    margin-top: 20px;
+    margin-bottom: 5px;
+}
+
+.save-outfit:hover {
+    background-color: #1d4b47;
+    margin-bottom: 5px;
+}

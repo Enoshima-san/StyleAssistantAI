@@ -289,7 +289,8 @@ app.post('/prompt', async (req, res) => {
                         status: 'yea',
                         aiResponse: newString,
                         dbResults: rows,
-                        keywords: foundKeywords
+                        keywords: foundKeywords,
+                        aiPrompt: testPromt
                     }));
                 }
             });
@@ -322,6 +323,30 @@ const authenticateToken = (req, res, next) => {
       next();
     });
 };
+
+// Сохранение образа в бд
+app.post('/saveAnswer', authenticateToken, async (request, response) => {
+    const userId = request.user.userId;
+    const data = request.body;
+    const currentDate = new Date().toISOString();
+    const outfitId = randomUUID();
+    db.run('INSERT INTO Образы (ID_Образа, ID_Пользователя, Название, Параметры_Генерации, Дата_Создания) VALUES (?, ?, ?, ?, ?)',
+                    [outfitId, userId, data.aiResponse, data.aiPrompt, currentDate],
+                    (err) => {
+                        if (err) {
+                            console.error(err.message);
+                            response.status(400);
+                            response.end();
+                        } else {
+                            response.status(201);
+                            response.end();
+                        }
+                    }
+                );
+    console.log(data);
+    response.status(201);
+    response.end();
+});
 
 app.post('/save-profile', authenticateToken, async (request, response) => {
     const userId = request.user.userId;

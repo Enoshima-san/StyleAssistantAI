@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', function(){
     const likeDislikeButtons = document.querySelectorAll('.action-button');
     const logOutButton = document.getElementById('log-out');
     const saveButton = document.querySelector('.save');
+    const saveOutfitButton = document.getElementById('saveButton');
 
 
     // Функция для запросов
@@ -235,6 +236,9 @@ document.addEventListener('DOMContentLoaded', function(){
                 {
                     alert('Генерация завершена');
                     const keys = Object.keys(data.dbResults);
+                    sessionStorage.setItem('aiAnswer', data.aiResponse);
+                    sessionStorage.setItem('aiPrompt', data.aiPrompt);
+                    saveOutfitButton.disabled = false;
                     if (keys != null)
                     {   
                         for (const key of keys) {
@@ -266,7 +270,7 @@ document.addEventListener('DOMContentLoaded', function(){
         removeAllChildren(container);
         loadUserDataCatalog();
     }
-
+    // Кнопка создания образа с запросом на сервер по параметрам
     generateButton?.addEventListener('click', async(e) => {
         e.preventDefault();
         const container = document.getElementById('products-display');
@@ -301,7 +305,11 @@ document.addEventListener('DOMContentLoaded', function(){
                 if (response.ok) 
                 {
                     alert('Генерация завершена');
+                    saveOutfitButton.disabled = false;
+                    sessionStorage.setItem('aiAnswer', data.aiResponse);
+                    sessionStorage.setItem('aiPrompt', data.aiPrompt);
                     const keys = Object.keys(data.dbResults);
+                    
                     if (keys != null)
                     {   
                         for (const key of keys) {
@@ -321,6 +329,34 @@ document.addEventListener('DOMContentLoaded', function(){
             }
         } catch(error) {console.log(error)}
     })
+    // Кнопка сохранения образа на сервер
+    saveOutfitButton?.addEventListener('click', async(e) => {
+        e.preventDefault();
+        const token = sessionStorage.getItem('token');
+        if (!token) {
+            alert('Токен не найден. Пожалуйста, войдите снова.');
+            window.location.replace('releasePage.HTML');
+            return;
+        }
+        try {
+            let aiResponse = sessionStorage.getItem('aiAnswer');
+            let aiPrompt = sessionStorage.getItem('aiPrompt');
+            const response = await apiRequest('http://localhost:3000/saveAnswer', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({aiResponse, aiPrompt})
+            });
+            if (response.ok) {
+                alert('Образ успешно сохранен!');
+                console.log('Образ сохранен:');
+            } else {
+                console.log('Статус ответа:', response.status);
+                alert('Ошибка при сохранении образа: ' + response.status);
+            }
+        } catch(error) {console.log(error)}
+    })
 
     // Доступ к странице профиля
     profilePage?.addEventListener('click', async (e) => {
@@ -332,7 +368,7 @@ document.addEventListener('DOMContentLoaded', function(){
       {
         window.location.replace('profilePage.HTML');
       }
-      else{alert('Ошибка генерации');}
+      else{alert('Ошибка доступа');}
     } catch (error) {
       console.log(error);
       sessionStorage.removeItem('token');
@@ -348,7 +384,7 @@ document.addEventListener('DOMContentLoaded', function(){
       {
         window.location.replace('catalogPage.HTML');
       }
-      else{alert('Ошибка генерации');}
+      else{alert('Ошибка доступа');}
     } catch (error) {
       console.log(error);
       sessionStorage.removeItem('token');
@@ -364,7 +400,7 @@ document.addEventListener('DOMContentLoaded', function(){
       {
         window.location.replace('favoritePage.HTML');
       }
-      else{alert('Ошибка генерации');}
+      else{alert('Ошибка доступа');}
     } catch (error) {
       console.log(error);
       sessionStorage.removeItem('token');
@@ -380,7 +416,7 @@ document.addEventListener('DOMContentLoaded', function(){
       {
         window.location.replace('releasePageGen.HTML');
       }
-      else{alert('Ошибка генерации');}
+      else{alert('Ошибка доступа');}
     } catch (error) {
       console.log(error);
       sessionStorage.removeItem('token');
