@@ -49,19 +49,19 @@ app.post('/registration', async (request, response) => {
     // Проверяем, существует ли пользователь с такой почтой
     bcrypt.genSalt(10, (err, salt) => {
         if (err) {
-            console.error(err.message);
+            console.error(err);
             response.status(400);
             response.end();
         }
         bcrypt.hash(data.password, salt, (err, hash) => {
             if (err) {
-                console.error(err.message);
+                console.error(err);
                 response.status(400);
                 response.end();
             }
             db.get('SELECT * FROM Пользователи WHERE Почта = ?', [data.usermail], (err, row) => {
                 if (err) {
-                    console.error(err.message);
+                    console.error(err);
                     response.status(400);
                     response.end();
                     return;
@@ -83,7 +83,7 @@ app.post('/registration', async (request, response) => {
                     [userId, data.usermail, hash, data.username, currentDate],
                     (err) => {
                         if (err) {
-                            console.error(err.message);
+                            console.error(err);
                             response.status(400);
                             response.end();
                         } else {
@@ -105,7 +105,7 @@ app.post('/login', async (request, response) => {
         [data.usermail],
         (err, row) => {
             if (err) {
-                console.error(err.message);
+                console.error(err);
                 response.status(400);
                 response.end();
             } else {
@@ -113,7 +113,7 @@ app.post('/login', async (request, response) => {
                     const storedHash = row.hashedPassword;
                     bcrypt.compare(data.password, storedHash, (err, result) => {
                         if (err) {
-                            console.error(err.message);
+                            console.error(err);
                             response.status(400);
                             response.end();
                         }
@@ -124,7 +124,7 @@ app.post('/login', async (request, response) => {
                             response.status(201);
                             response.end();
                         } else {
-                            console.error(err.message);
+                            console.error(err);
                             response.status(400);
                             response.end();
                         }
@@ -348,7 +348,7 @@ app.post('/saveAnswer', authenticateToken, async (request, response) => {
                     [outfitId, userId, data.aiResponse, data.aiPrompt, currentDate],
                     (err) => {
                         if (err) {
-                            console.error(err.message);
+                            console.error(err);
                             response.status(400);
                             response.end();
                         } else {
@@ -368,7 +368,7 @@ app.post('/save-profile', authenticateToken, async (request, response) => {
 
     db.get('SELECT * FROM Профили_Пользователей WHERE ID_Пользователя = ?', [userId], (err, row) => {
         if (err) {
-            console.error('Ошибка при проверке профиля:', err.message);
+            console.error('Ошибка при проверке профиля:', err);
             response.status(500).json({ error: 'Ошибка базы данных' });
             return;
         }
@@ -386,7 +386,7 @@ app.post('/save-profile', authenticateToken, async (request, response) => {
                 data.height, data.size, data.gender, currentDate, userId
             ], (err) => {
                 if (err) {
-                    console.error('Ошибка при обновлении профиля:', err.message);
+                    console.error('Ошибка при обновлении профиля:', err);
                     response.status(500).json({ error: 'Ошибка обновления профиля' });
                 } else {
                     console.log("Профиль обновлен для пользователя:", userId);
@@ -403,7 +403,7 @@ app.post('/save-profile', authenticateToken, async (request, response) => {
                 data.height, data.size, data.gender, currentDate
             ], (err) => {
                 if (err) {
-                    console.error('Ошибка при создании профиля:', err.message);
+                    console.error('Ошибка при создании профиля:', err);
                     response.status(500).json({ error: 'Ошибка сохранения профиля' });
                 } else {
                     console.log("Профиль создан для пользователя:", userId);
@@ -420,7 +420,7 @@ app.get('/user-data', authenticateToken, (req, res) => {
 
     db.get('SELECT Имя, Почта, Стиль, Цвет, Материал, Рост, Размер_Одежды, Пол FROM Пользователи INNER JOIN Профили_Пользователей ON Пользователи.ID_Пользователя=Профили_Пользователей.ID_Пользователя WHERE Пользователи.ID_Пользователя = ?', [userId], (err, row) => {
         if (err) {
-            console.error('Ошибка при получении данных пользователя:', err.message);
+            console.error('Ошибка при получении данных пользователя:', err);
             return res.status(500).json({ error: 'Ошибка базы данных' });
         }
 
