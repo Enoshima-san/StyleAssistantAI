@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Профиль</title>
+  <link rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Навигационные вкладки в оправе -->
+      <div class="tabs-container">
+          <div class="tabs">
+                <button class="tab-button active" id="userProfile" type="click">Профиль</button>
+                <button class="tab-button" id="recomendation" type="click">Рекомендация</button>
+                <button class="tab-button" id="catalog" type="click">Каталог</button>
+                <button class="tab-button" id="favorite" type="click">Избранное</button>
+          </div>
+      </div>
+
+      <div class="user-info">
+          <img class="user-avatar" src="images/profileIcon.jpg" alt="Фото профиля">
+          <div class="info-header">
+              <h2>Личная информация</h2>
+              <div class="info-header">Ваше имя</div>
+              <div class="info-value" id="userName">Загрузка...</div>
+              <div class="info-header">Email</div>
+              <div class="info-value" id="userEmail">Загрузка...</div>
+              <button class="log-out" id="log-out" type="click">Выйти</button>
+          </div>
+      </div>
+
+
+      <div class="about-info">
+        <label for="about">О себе:</label>
+        <textarea class="text-area" id="about" placeholder="Расскажите о себе..."></textarea>
+      </div>
+
+      <div class="user-style-params">
+          <div class="user-style">
+            <h2>Ваши предпочтения:</h2> 
+                <label class="info-header">Стиль:</label>
+                <input type="text" class="info-value" id="style">
+
+                <label class="info-header">Цвет:</label>
+                <input type="text" class="info-value" id="color">
+
+                <label class="info-header">Материал:</label>
+                <input type="text" class="info-value" id="material">
+           </div> 
+
+        <div class="user-params">
+          <h2> Параметры пользователя:</h2>
+
+                <label class="info-header">Ваш рост:</label>
+                <input type="text" class="info-value" id="height">
+
+                <label class="info-header">Размер вашей одежды:</label>
+                <input type="text" class="info-value" id="size">
+
+                <label class="info-header">Ваш пол:</label>
+                <input type="text" class="info-value" id="gender">
+        </div>
+      </div>
+
+      <div class="action-button">
+        <button class="save" title="Сохранить изменения">Сохранить изменения</button>   
+      </div>
+  </div>
+
+  <img class="flower-left" src="images/flowerLeft.png" alt="flowerLeft">
+  <img class="flower-right" src="images/flowerRight.png" alt="flowerRight">
+  
+  <script src="scripts/script.js"></script>
+</body>
+</html>

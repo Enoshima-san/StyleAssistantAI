@@ -1,0 +1,537 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    overflow: auto;
+    scrollbar-gutter: stable;
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #DEF2FE;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    flex-direction:row;
+    overflow: auto;
+    position: relative;
+}
+
+.container {
+    display: flow-root;
+    gap: 10px;
+    margin-inline: auto;
+    order:2;
+}
+
+.item {
+  padding: 20px;
+  border: 1px solid #ccc;
+  flex: 1;
+  min-width: 150px;
+}
+
+.login-form {
+    background-color: #D1EFFB;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    width: 500px;
+    height: 500px;
+    text-align: center;
+}
+
+.register-form {
+    background-color: #D1EFFB;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    width: 500px;
+    height: 500px;
+    text-align: center;
+}
+
+.title {
+    font-size: 4em;
+    font-weight:lighter;
+    color: #000000;
+    margin-bottom: 10px;
+    font-family:  "Brush Script MT", "Lucida Handwriting", Apple Chancery, cursive;
+}
+
+h3 {
+    margin-bottom: 20px;
+    color: #333;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    text-align: left;
+}
+
+input[type="text"], input[type="email"], input[type="password"] {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+button {
+    width: 100%;
+    padding: 12px;
+    background-color: #9CADC4;
+    border: none;
+    border-radius: 5px;
+    color: rgb(0, 0, 0);
+    font-size: 1rem;
+    cursor: pointer;
+    margin-top: 20px;
+}
+
+button:hover {
+    background-color: #696969;
+}
+
+.links {
+    margin-top: 10px;
+}
+
+.links a {
+    color: #000000;
+    text-decoration: none;
+    margin: 0 10px;
+}
+
+.links a:hover {
+    text-decoration: underline;
+}
+
+.tabs-container {
+    margin-top: 30px;
+    background-color: #8C9CB6;
+    border-radius: 12px;
+    padding: 4px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.tabs {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 5px;
+    margin-top: 5px;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.tab-button {
+    flex: 1;
+    background-color: #CFE1E4;
+    color: #000000;
+    border: 1px solid #ccc;
+    padding: 10px 20px;
+    margin: 0 10px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 700;
+    transition: all 0.3s ease;
+    border-radius: 8px;
+}
+
+.tab-button.active {
+    background-color: #F7F7F7;
+    color: rgb(0, 0, 0);
+}
+
+.tab-button:hover:not(.active) {
+    background-color: #f0f3ff;
+    color: #000000;
+}
+
+.preferences-form {
+    background-color: #F7F7F7;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 40px;
+    border: 2px solid #ACA2A2;
+    
+}
+
+h2 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.form-section {
+    margin-bottom: 20px;
+}
+
+.input-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: space-between;
+}
+
+.input-group input {
+    width: 48%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.show-outfit {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    background-color: #00aaff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-top: 20px;
+}
+
+.show-outfit:hover {
+    background-color: #0088cc;
+}
+
+.products {
+    max-width: 1500px;
+    justify-content: center;
+    overflow-y: auto;
+    overflow-x: auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 15px;
+}
+
+.product-card {
+    background-color: #F7F7F7;;
+    padding: 15px;
+    width: 300px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    border: 2px solid #ACA2A2;
+    margin-bottom: 15px;
+}
+
+.product-card img {
+    width: 100%;
+    border-radius: 10px;
+    margin-bottom: 10px;
+}
+
+.product-info p {
+    font-size: 14px;
+    color: #333;
+    margin-bottom: 5px;
+}
+
+.product-card button {
+    padding: 10px;
+    background-color: #9CADC4;
+    color: rgb(0, 0, 0);
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+.product-card a {
+    padding: 5px;
+    background-color: #9CADC4;
+    color: rgb(0, 0, 0);
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.product-card button:hover {
+    background-color: #696969;;
+}
+
+/* Карточки образов */
+.outfits {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 25px;
+}
+
+.outfit-card {
+    background-color: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    position: relative;
+}
+
+.outfit-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.outfit-header {
+    padding: 15px;
+    border-bottom: 1px solid #f0f0f0;
+    position: relative;
+}
+
+.outfit-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #222;
+}
+
+.heart-icon {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    color: #ff4757;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+.outfit-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 1px;
+    background-color: #f0f0f0;
+}
+.outfit-grid-added {
+    display: flex;
+    justify-content: center;
+    background-color: #f0f0f0;
+}
+
+.outfit-item {
+    aspect-ratio: 1/1;
+    background-color: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+
+}
+
+.outfit-item-added {
+    aspect-ratio: 1/1;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 10px;
+    margin-top: 10px;
+
+}
+
+.outfit-item::after {
+    content: "Вещь";
+    position: absolute;
+    color: #999;
+
+}
+
+.outfit-item-added> * {
+    margin-bottom: 15px;
+
+}
+
+.outfit-item-added::after {
+    position: center;
+    color: #999;
+}
+
+.outfit-button-added {
+    padding: 5px;
+    background-color: #9CADC4;
+    color: rgb(0, 0, 0);
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+/* Кнопки лайк/дизлайк */
+.outfit-actions {
+    display: flex;
+    padding: 15px;
+    gap: 10px;
+}
+
+.action-button {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+
+.like-button {
+    background-color: #e8f5e8;
+    color: #2ecc71;
+}
+
+.dislike-button {
+    background-color: #ffe8e8;
+    color: #e74c3c;
+}
+
+.like-button:hover {
+    background-color:#83c9a0;
+    color: #5e806c;
+    opacity: 1.5;
+}
+
+.dislike-button:hover {
+    background-color:#e68e84;
+    color: #e74c3c;
+    opacity: 1.5;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 24px;
+    font-weight: 700;
+    background-color: #f1f9ff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 40px;
+}
+
+.user-avatar {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background-color: #4a6cf7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+}
+
+.info-header{
+    color: #222;
+}
+
+.info-value{
+    color: #5D5A5A;
+    font-size: 28px;
+    font-weight: 800;
+}
+
+.about-info{
+    gap: 10px;
+    font-size: 24px;
+    font-weight: 700;
+    background-color: #f1f9ff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 40px;
+}
+
+.text-area{
+    width: 100%;
+    height: 100px;
+}
+
+.user-style-params{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 16px;
+    font-weight: 500;
+    background-color: #f1f9ff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 10px;
+}
+
+.user-style-params input{
+    height: 40px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.action-button {
+    margin-bottom: 20px;
+}
+
+.flower-left {
+    width: 15%;
+    order:1;
+    position: absolute;
+    bottom: 0;
+    transform: translateX(-285%);
+    
+}
+
+.flower-right {
+    width:15%;
+    order:3;
+    display: flex;
+    align-items: flex-end;
+    position: absolute;
+    bottom: 0; 
+    transform: translateX(285%);
+}
+
+.guy-left {
+    width: 15%;
+    order:1;
+    position: absolute;
+    bottom: 0;
+    transform: translateX(-285%);
+    
+}
+
+.girl-right {
+    width:15%;
+    order:3;
+    display: flex;
+    align-items: flex-end;
+    position: absolute;
+    bottom: 0; 
+    transform: translateX(285%);
+}
+
+.save-outfit {
+    width: 100%;
+    padding: 12px;
+    background-color: #66c4bf;
+    border: none;
+    border-radius: 5px;
+    color: rgb(0, 0, 0);
+    font-size: 1rem;
+    cursor: pointer;
+    margin-top: 20px;
+    margin-bottom: 5px;
+}
+
+.save-outfit:hover {
+    background-color: #1d4b47;
+    margin-bottom: 5px;
+}

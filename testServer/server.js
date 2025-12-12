@@ -1,4 +1,5 @@
 // Подключние фреймворков и библиотек
+/*
 import { InferenceClient  } from "@huggingface/inference";
 import express from 'express';
 import cors from 'cors';
@@ -7,11 +8,24 @@ import dotenv from 'dotenv'
 import { randomUUID } from 'crypto';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import path from "path";
+import { fileURLToPath } from "url"; */
+const { InferenceClient } = require("@huggingface/inference");
+const express = require("express");
+const cors = require("cors");
+const sqlite3 = require("sqlite3");
+const dotenv = require("dotenv");
+const { randomUUID } = require("crypto");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const path = require("path");
 
-dotenv.config({ path: './.env' });
+dotenv.config({ path: path.join(__dirname, ".env") });
+
+const dbPath = path.join(process.cwd(), "db", "BD_test.db");
 
 // Подключение базы данных
-const db = new sqlite3.Database("BD_test.db" ,sqlite3.OPEN_READWRITE, (err) => {
+const db = new sqlite3.Database(dbPath ,sqlite3.OPEN_READWRITE, (err) => {
     if(err)
     {
         console.log("Error Occurred - " + err.message);
@@ -27,7 +41,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }))
-
+app.use(express.static(path.join(__dirname, "public")));
 
 // Получение данных на сервер и вставка их в базу данных
 app.post('/registration', async (request, response) => {
