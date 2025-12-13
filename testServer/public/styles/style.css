@@ -535,3 +535,17 @@ h2 {
     background-color: #1d4b47;
     margin-bottom: 5px;
 }
+
+.buy-button {
+    position: absolute;
+    bottom: 5px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-size: 12px;
+    z-index: 10;
+}

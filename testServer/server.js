@@ -344,23 +344,79 @@ app.post('/saveAnswer', authenticateToken, async (request, response) => {
     const data = request.body;
     const currentDate = new Date().toISOString();
     const outfitId = randomUUID();
-    db.run('INSERT INTO Образы (ID_Образа, ID_Пользователя, Название, Параметры_Генерации, Дата_Создания) VALUES (?, ?, ?, ?, ?)',
-                    [outfitId, userId, data.aiResponse, data.aiPrompt, currentDate],
-                    (err) => {
-                        if (err) {
-                            console.error(err);
-                            response.status(400);
-                            response.end();
-                        } else {
-                            response.status(201);
-                            response.end();
+
+    try {
+        // Сохраняем образ
+        db.run('INSERT INTO Образы (ID_Образа, ID_Пользователя, Название, Параметры_Генерации, Дата_Создания) VALUES (?, ?, ?, ?, ?)',
+            [outfitId, userId, data.aiResponse, data.aiPrompt, currentDate],
+            (err) => {
+                if (err) {
+                    console.error('Ошибка сохранения образа:', err.message);
+                    return response.status(400).json({
+                        error: 'Ошибка сохранения образа',
+                        details: err.message
+                    });
+                }
+
+                console.log('Образ сохранен, ID:', outfitId);
+
+                // Сохраняем товары образа (если есть)
+                if (data.productIds && data.productIds.length > 0) {
+                    console.log('Начинаю сохранение товаров...');
+
+                    let completed = 0;
+                    const total = data.productIds.length;
+
+                    data.productIds.forEach((productId, index) => {
+                        if (!productId || productId === 'undefined' || productId === 'null') {
+                            completed++;
+                            if (completed === total) {
+                                response.status(201).json({
+                                    message: 'Образ сохранен (некоторые товары пропущены)',
+                                    outfitId: outfitId
+                                });
+                            }
+                            return;
                         }
-                    }
-                );
-    console.log(data);
-    response.status(201);
-    response.end();
+
+                        // Сохраняем элемент образа
+                        db.run('INSERT INTO Элементы_Образа (ID_Образа, ID_Товара, Позиция) VALUES (?, ?, ?)',
+                            [outfitId, productId, index + 1],
+                            (err) => {
+                                if (err) {
+                                    console.error('Ошибка сохранения элемента:', err.message);
+                                } else {
+                                    console.log(`Сохранен товар ${index + 1}/${total}: ${productId}`);
+                                }
+
+                                completed++;
+                                if (completed === total) {
+                                    response.status(201).json({
+                                        message: 'Образ и товары сохранены',
+                                        outfitId: outfitId
+                                    });
+                                }
+                            }
+                        );
+                    });
+                } else {
+                    console.log('Нет товаров для сохранения');
+                    response.status(201).json({
+                        message: 'Образ сохранен без товаров',
+                        outfitId: outfitId
+                    });
+                }
+            }
+        );
+    } catch (error) {
+        console.error('Общая ошибка при сохранении:', error);
+        response.status(500).json({
+            error: 'Внутренняя ошибка сервера',
+            details: error.message
+        });
+    }
 });
+
 
 app.post('/save-profile', authenticateToken, async (request, response) => {
     const userId = request.user.userId;
@@ -439,6 +495,94 @@ app.get('/user-data', authenticateToken, (req, res) => {
             gender: row.Пол
         });
     });
+});
+
+// Получение образов пользователя
+app.get('/user-outfits', authenticateToken, async (req, res) => {
+    const userId = req.user.userId;
+
+    const query = `
+        SELECT
+            о.ID_Образа,
+            о.Название,
+            о.Параметры_Генерации,
+            о.Дата_Создания,
+            э.ID_Товара,
+            т.Название AS Название_Товара,
+            т.Ссылка_Товар,
+            х.Ссылка_Изображение,
+            э.Позиция
+        FROM Образы о
+                 LEFT JOIN Элементы_Образа э ON о.ID_Образа = э.ID_Образа
+                 LEFT JOIN Товары т ON э.ID_Товара = т.ID_Товара
+                 LEFT JOIN Характеристики_Товаров х ON т.ID_Товара = х.ID_Товара
+        WHERE о.ID_Пользователя = ?
+        ORDER BY о.Дата_Создания DESC, э.Позиция ASC
+    `;
+
+    db.all(query, [userId], (err, rows) => {
+        if (err) {
+            console.error('Ошибка при получении образов:', err.message);
+            return res.status(500).json({ error: 'Ошибка базы данных' });
+        }
+
+        const outfitsMap = {};
+        rows.forEach(row => {
+            if (!outfitsMap[row.ID_Образа]) {
+                outfitsMap[row.ID_Образа] = {
+                    outfitId: row.ID_Образа,
+                    outfitName: row.Название || 'Сохраненный образ',
+                    generationParams: row.Параметры_Генерации,
+                    creationDate: row.Дата_Создания,
+                    products: []
+                };
+            }
+
+            if (row.ID_Товара) {
+                outfitsMap[row.ID_Образа].products.push({
+                    productId: row.ID_Товара,
+                    productName: row.Название_Товара,
+                    productLink: row.Ссылка_Товар,
+                    productImage: row.Ссылка_Изображение,
+                    position: row.Позиция
+                });
+            }
+        });
+
+        const outfits = Object.values(outfitsMap);
+        res.json(outfits);
+    });
+});
+
+// Удаление образа
+app.delete('/delete-outfit/:outfitId', authenticateToken, (req, res) => {
+    const userId = req.user.userId;
+    const outfitId = req.params.outfitId;
+
+    // Проверяем, что образ принадлежит пользователю
+    db.get('SELECT * FROM Образы WHERE ID_Образа = ? AND ID_Пользователя = ?',
+        [outfitId, userId],
+        (err, row) => {
+            if (err) {
+                console.error('Ошибка при проверке образа:', err.message);
+                return res.status(500).json({ error: 'Ошибка базы данных' });
+            }
+
+            if (!row) {
+                return res.status(404).json({ error: 'Образ не найден или у вас нет прав на его удаление' });
+            }
+
+            // Удаляем образ (внешние ключи настроены на каскадное удаление)
+            db.run('DELETE FROM Образы WHERE ID_Образа = ?', [outfitId], function(err) {
+                if (err) {
+                    console.error('Ошибка при удалении образа:', err.message);
+                    return res.status(500).json({ error: 'Ошибка удаления образа' });
+                }
+
+                res.json({ message: 'Образ успешно удален' });
+            });
+        }
+    );
 });
 
 // Доступ к функциям авторизированных пользователей

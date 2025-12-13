@@ -22,7 +22,11 @@ document.addEventListener('DOMContentLoaded', function(){
       const response = await fetch(url, options);
       return response;
     }
-
+    function removeAllChildren(parentElement) {
+        while (parentElement.firstChild) {
+            parentElement.removeChild(parentElement.firstChild);
+        }
+    }
     registerForm?.addEventListener('submit', function(e) {
         e.preventDefault();
         let username = (document.getElementById("name").value)   
@@ -94,7 +98,7 @@ document.addEventListener('DOMContentLoaded', function(){
         productImg.src = `${content.Ссылка_Изображение}`;
         productImg.width = "200";
         productImg.height = "200";
-         
+        productDiv.dataset.productId = content.ID_Товара;
         productInfo.className = 'product-info';
         productInfoP1.textContent = `Название: ${content.Название_Товара}`
         productInfoP2.textContent = `Цвет: ${content.Цвет}`
@@ -208,6 +212,211 @@ document.addEventListener('DOMContentLoaded', function(){
             console.error('Ошибка при загрузке данных пользователя:', error);
         }
     }
+
+    async function loadUserOutfits() {
+        try {
+            const token = sessionStorage.getItem('token');
+
+            if (!token) {
+                window.location.replace('releasePage.HTML');
+                return;
+            }
+
+            const response = await fetch('http://localhost:3000/user-outfits', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const outfits = await response.json();
+
+                const container = document.querySelector('.outfits') ||
+                    document.getElementById('outfits-display');
+
+                if (!container) {
+                    console.error('Контейнер для образов не найден');
+                    return;
+                }
+                removeAllChildren(container);
+
+                if (!outfits || outfits.length === 0) {
+                    container.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: #666;">
+                    <p>У вас пока нет сохраненных образов</p>
+                    <p>Сгенерируйте образ на вкладке "Рекомендация" и нажмите "Сохранить аутфит"</p>
+                </div>`;
+                    return;
+                }
+
+                outfits.forEach(outfit => {
+                    createFavoriteOutfitCard(outfit);
+                });
+            } else {
+                const container = document.querySelector('.outfits');
+                if (container) {
+                    container.innerHTML = '<p style="text-align: center; padding: 40px; color: #666;">Ошибка загрузки избранного. Попробуйте обновить страницу.</p>';
+                }
+            }
+        } catch (error) {
+            const container = document.querySelector('.outfits');
+            if (container) {
+                container.innerHTML = '<p style="text-align: center; padding: 40px; color: #666;">Ошибка сети при загрузке избранного.</p>';
+            }
+        }
+    }
+
+// Функция удаления образа
+    async function deleteOutfit(outfitId, outfitCardElement) {
+        if (!confirm('Вы уверены, что хотите удалить этот образ?')) {
+            return;
+        }
+        try {
+            const response = await apiRequest(`http://localhost:3000/delete-outfit/${outfitId}`, {
+                method: 'DELETE'
+            });
+            if (response.ok) {
+                outfitCardElement.remove();
+                alert('Образ удален');
+            } else {
+                alert('Ошибка при удалении образа');
+            }
+        } catch (error) {
+            console.error('Ошибка при удалении образа:', error);
+            alert('Ошибка сети при удалении образа');
+        }
+    }
+
+    function createFavoriteOutfitCard(outfit) {
+        const container = document.querySelector('.outfits') || document.getElementById('outfits-display');
+        if (!container) return;
+
+        const outfitCard = document.createElement('div');
+        outfitCard.className = 'outfit-card';
+        outfitCard.dataset.outfitId = outfit.outfitId;
+
+        const outfitHeader = document.createElement('div');
+        outfitHeader.className = 'outfit-header';
+
+        const outfitTitle = document.createElement('h3');
+        outfitTitle.className = 'outfit-title';
+        outfitTitle.textContent = outfit.outfitName || 'Сохраненный образ';
+
+        const deleteButton = document.createElement('div');
+        deleteButton.className = 'heart-icon';
+        deleteButton.innerHTML = '♥';
+        deleteButton.style.cursor = 'pointer';
+        deleteButton.style.color = '#ff4757';
+        deleteButton.style.fontSize = '20px';
+        deleteButton.title = 'Удалить образ';
+        deleteButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            deleteOutfit(outfit.outfitId, outfitCard);
+        });
+
+        outfitHeader.appendChild(outfitTitle);
+        outfitHeader.appendChild(deleteButton);
+
+        const outfitGrid = document.createElement('div');
+        outfitGrid.className = 'outfit-grid';
+
+        // Если есть товары
+        if (outfit.products && outfit.products.length > 0) {
+
+            // Берем максимум 4 товара
+            const maxProducts = Math.min(outfit.products.length, 4);
+            let hasValidProducts = false;
+
+            for (let i = 0; i < maxProducts; i++) {
+                const product = outfit.products[i];
+                const productItem = document.createElement('div');
+                productItem.className = 'outfit-item';
+
+                // Картинка товара
+                if (product.productImage && product.productImage !== '') {
+                    const productImage = document.createElement('img');
+                    productImage.src = product.productImage;
+                    productImage.alt = product.productName || 'Товар';
+                    productImage.style.width = '100%';
+                    productImage.style.height = '100%';
+                    productImage.style.objectFit = 'cover';
+                    productImage.style.borderRadius = '4px';
+                    productItem.appendChild(productImage);
+                    hasValidProducts = true;
+                } else {
+                    productItem.innerHTML = '<span style="color: #999; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">Нет изображения</span>';
+                    hasValidProducts = true;
+                }
+
+                // Кнопка "Купить"
+                if (product.productLink && product.productLink !== '') {
+                    const buyButton = document.createElement('a');
+                    buyButton.href = product.productLink;
+                    buyButton.target = '_blank';
+                    buyButton.className = 'buy-button';
+                    buyButton.textContent = 'Купить';
+                    buyButton.style.position = 'absolute';
+                    buyButton.style.bottom = '5px';
+                    buyButton.style.left = '50%';
+                    buyButton.style.transform = 'translateX(-50%)';
+                    buyButton.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+                    buyButton.style.color = 'white';
+                    buyButton.style.padding = '5px 10px';
+                    buyButton.style.borderRadius = '5px';
+                    buyButton.style.textDecoration = 'none';
+                    buyButton.style.fontSize = '12px';
+                    buyButton.style.zIndex = '10';
+
+                    productItem.appendChild(buyButton);
+                }
+
+                outfitGrid.appendChild(productItem);
+            }
+
+            if (!hasValidProducts) {
+                const emptyMessage = document.createElement('div');
+                emptyMessage.style.gridColumn = '1 / span 2';
+                emptyMessage.style.gridRow = '1 / span 2';
+                emptyMessage.style.display = 'flex';
+                emptyMessage.style.alignItems = 'center';
+                emptyMessage.style.justifyContent = 'center';
+                emptyMessage.style.color = '#666';
+                emptyMessage.style.fontSize = '14px';
+                emptyMessage.style.textAlign = 'center';
+                emptyMessage.textContent = 'В этом образе нет товаров с изображениями';
+                outfitGrid.innerHTML = ''; // Очищаем сетку
+                outfitGrid.appendChild(emptyMessage);
+            } else {
+                const emptySlots = 4 - maxProducts;
+                for (let i = 0; i < emptySlots; i++) {
+                    const emptyItem = document.createElement('div');
+                    emptyItem.className = 'outfit-item';
+                    emptyItem.innerHTML = '<span style="color: #999; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">Нет товара</span>';
+                    outfitGrid.appendChild(emptyItem);
+                }
+            }
+        } else {
+            console.log('У образа нет товаров');
+            const emptyMessage = document.createElement('div');
+            emptyMessage.style.gridColumn = '1 / span 2';
+            emptyMessage.style.gridRow = '1 / span 2';
+            emptyMessage.style.display = 'flex';
+            emptyMessage.style.alignItems = 'center';
+            emptyMessage.style.justifyContent = 'center';
+            emptyMessage.style.color = '#666';
+            emptyMessage.style.fontSize = '14px';
+            emptyMessage.style.textAlign = 'center';
+            emptyMessage.textContent = 'В этом образе пока нет товаров';
+            outfitGrid.appendChild(emptyMessage);
+        }
+
+        outfitCard.appendChild(outfitHeader);
+        outfitCard.appendChild(outfitGrid);
+        container.appendChild(outfitCard);
+    }
+
     // Загрузка товаров на странице каталога
       async function loadUserDataCatalog() {
         try {
@@ -338,25 +547,38 @@ document.addEventListener('DOMContentLoaded', function(){
             window.location.replace('releasePage.HTML');
             return;
         }
+
+        const productCards = document.querySelectorAll('.product-card');
+        const productIds = Array.from(productCards).map(card => {
+            return card.dataset.productId;
+        }).filter(id => id && id !== 'undefined');
+
         try {
             let aiResponse = sessionStorage.getItem('aiAnswer');
             let aiPrompt = sessionStorage.getItem('aiPrompt');
+
             const response = await apiRequest('http://localhost:3000/saveAnswer', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({aiResponse, aiPrompt})
+                body: JSON.stringify({
+                    aiResponse,
+                    aiPrompt,
+                    productIds: productIds
+                })
             });
+
             if (response.ok) {
                 alert('Образ успешно сохранен!');
-                console.log('Образ сохранен:');
             } else {
-                console.log('Статус ответа:', response.status);
+                const errorText = await response.text();
                 alert('Ошибка при сохранении образа: ' + response.status);
             }
-        } catch(error) {console.log(error)}
-    })
+        } catch(error) {
+            alert('Ошибка сети при сохранении образа');
+        }
+    });
 
     // Доступ к странице профиля
     profilePage?.addEventListener('click', async (e) => {
@@ -504,6 +726,28 @@ document.addEventListener('DOMContentLoaded', function(){
             alert('Ошибка сети при сохранении профиля');
         }
     });
+    // Для страницы избранного
+    if (window.location.pathname.includes('favoritePage.html') ||
+        document.getElementById('favorite')?.classList.contains('active')) {
+        setTimeout(() => {
+            const container = document.querySelector('.outfits') || document.getElementById('outfits-display');
+            if (container) {
+                removeAllChildren(container);
+                container.innerHTML = '<p style="text-align: center; padding: 20px;">Загрузка избранного...</p>';
+                loadUserOutfits();
+            } else {
+                // Создаем контейнер если его нет
+                const mainContainer = document.querySelector('.container');
+                if (mainContainer) {
+                    const newContainer = document.createElement('div');
+                    newContainer.className = 'outfits';
+                    newContainer.id = 'outfits-display';
+                    mainContainer.appendChild(newContainer);
+                    loadUserOutfits();
+                }
+            }
+        }, 100);
+    }
 
 
 });
