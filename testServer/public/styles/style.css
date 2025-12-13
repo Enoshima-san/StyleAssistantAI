@@ -262,11 +262,19 @@ h2 {
     background-color: #696969;;
 }
 
-/* Карточки образов */
+
 .outfits {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 25px;
+}
+
+.favorites {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 25px;
+    max-width: 700px;
+    margin: 0 auto;
 }
 
 .outfit-card {
@@ -276,6 +284,9 @@ h2 {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     position: relative;
+    height: 600px;
+    display: flex;
+    flex-direction: column;
 }
 
 .outfit-card:hover {
@@ -306,10 +317,11 @@ h2 {
 
 .outfit-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr 1fr;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, 1fr);
     gap: 1px;
     background-color: #f0f0f0;
+    flex-grow: 1;
 }
 .outfit-grid-added {
     display: flex;
@@ -318,13 +330,12 @@ h2 {
 }
 
 .outfit-item {
-    aspect-ratio: 1/1;
     background-color: #f8f9fa;
     display: flex;
     align-items: center;
     justify-content: center;
     position: relative;
-
+    min-height: 0;
 }
 
 .outfit-item-added {
@@ -335,7 +346,12 @@ h2 {
     margin-top: 10px;
 
 }
-
+.outfit-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 4px;
+}
 .outfit-item::after {
     content: "Вещь";
     position: absolute;

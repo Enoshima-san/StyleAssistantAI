@@ -233,37 +233,65 @@ document.addEventListener('DOMContentLoaded', function(){
             if (response.ok) {
                 const outfits = await response.json();
 
-                const container = document.querySelector('.outfits') ||
+                const container = document.querySelector('.favorites') ||
+                    document.querySelector('.outfits') ||
                     document.getElementById('outfits-display');
 
                 if (!container) {
                     console.error('Контейнер для образов не найден');
                     return;
                 }
+
+                // Очищаем контейнер
                 removeAllChildren(container);
 
                 if (!outfits || outfits.length === 0) {
-                    container.innerHTML = `
-                <div style="text-align: center; padding: 40px; color: #666;">
-                    <p>У вас пока нет сохраненных образов</p>
-                    <p>Сгенерируйте образ на вкладке "Рекомендация" и нажмите "Сохранить аутфит"</p>
-                </div>`;
+                    // Если образов нет, выводим сообщение
+                    const emptyMessage = document.createElement('p');
+                    emptyMessage.style.textAlign = 'center';
+                    emptyMessage.style.padding = '40px';
+                    emptyMessage.style.color = '#666';
+                    emptyMessage.textContent = 'У вас пока нет сохраненных образов.';
+                    container.appendChild(emptyMessage);
                     return;
                 }
 
-                outfits.forEach(outfit => {
-                    createFavoriteOutfitCard(outfit);
+                // Для каждого образа создаем карточку
+                outfits.forEach((outfit) => {
+                    // Создаем карточку с такой же структурой, как в HTML
+                    const cardElement = document.createElement('div');
+                    cardElement.className = 'outfit-card';
+
+                    cardElement.innerHTML = `
+                    <div class="outfit-header">
+                        <h3 class="outfit-title">${outfit.outfitName || 'Сохраненный образ'}</h3>
+                        <div class="heart-icon">♥</div>
+                    </div>
+                    <div class="outfit-grid">
+                        <div class="outfit-item"></div>
+                        <div class="outfit-item"></div>
+                        <div class="outfit-item"></div>
+                        <div class="outfit-item"></div>
+                    </div>
+                `;
+
+                    container.appendChild(cardElement);
+
+                    // Заполняем карточку данными
+                    populateFavoriteOutfitCard(cardElement, outfit);
                 });
             } else {
-                const container = document.querySelector('.outfits');
+                const container = document.querySelector('.favorites') ||
+                    document.querySelector('.outfits');
                 if (container) {
-                    container.innerHTML = '<p style="text-align: center; padding: 40px; color: #666;">Ошибка загрузки избранного. Попробуйте обновить страницу.</p>';
+                    container.innerHTML = '<p style="text-align: center; padding: 40px; color: #666;">Ошибка загрузки образов. Попробуйте обновить страницу.</p>';
                 }
             }
         } catch (error) {
-            const container = document.querySelector('.outfits');
+            const container = document.querySelector('.favorites') ||
+                document.querySelector('.outfits');
             if (container) {
-                container.innerHTML = '<p style="text-align: center; padding: 40px; color: #666;">Ошибка сети при загрузке избранного.</p>';
+                container.innerHTML = '<p style="text-align: center; padding: 40px; color: #666;">Ошибка сети при загрузке образов.</p>';
             }
         }
     }
@@ -289,42 +317,27 @@ document.addEventListener('DOMContentLoaded', function(){
         }
     }
 
-    function createFavoriteOutfitCard(outfit) {
-        const container = document.querySelector('.outfits') || document.getElementById('outfits-display');
-        if (!container) return;
+    function populateFavoriteOutfitCard(cardElement, outfit) {
+        cardElement.dataset.outfitId = outfit.outfitId;
 
-        const outfitCard = document.createElement('div');
-        outfitCard.className = 'outfit-card';
-        outfitCard.dataset.outfitId = outfit.outfitId;
-
-        const outfitHeader = document.createElement('div');
-        outfitHeader.className = 'outfit-header';
-
-        const outfitTitle = document.createElement('h3');
-        outfitTitle.className = 'outfit-title';
+        const outfitTitle = cardElement.querySelector('.outfit-title');
         outfitTitle.textContent = outfit.outfitName || 'Сохраненный образ';
 
-        const deleteButton = document.createElement('div');
-        deleteButton.className = 'heart-icon';
-        deleteButton.innerHTML = '♥';
+        const deleteButton = cardElement.querySelector('.heart-icon');
         deleteButton.style.cursor = 'pointer';
         deleteButton.style.color = '#ff4757';
         deleteButton.style.fontSize = '20px';
         deleteButton.title = 'Удалить образ';
         deleteButton.addEventListener('click', (e) => {
             e.stopPropagation();
-            deleteOutfit(outfit.outfitId, outfitCard);
+            deleteOutfit(outfit.outfitId, cardElement);
         });
 
-        outfitHeader.appendChild(outfitTitle);
-        outfitHeader.appendChild(deleteButton);
-
-        const outfitGrid = document.createElement('div');
-        outfitGrid.className = 'outfit-grid';
+        const outfitGrid = cardElement.querySelector('.outfit-grid');
+        removeAllChildren(outfitGrid);
 
         // Если есть товары
         if (outfit.products && outfit.products.length > 0) {
-
             // Берем максимум 4 товара
             const maxProducts = Math.min(outfit.products.length, 4);
             let hasValidProducts = false;
@@ -346,7 +359,11 @@ document.addEventListener('DOMContentLoaded', function(){
                     productItem.appendChild(productImage);
                     hasValidProducts = true;
                 } else {
-                    productItem.innerHTML = '<span style="color: #999; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">Нет изображения</span>';
+                    // Если нет изображения
+                    productItem.innerHTML = '<span style="color: #999;">Нет изображения</span>';
+                    productItem.style.display = 'flex';
+                    productItem.style.alignItems = 'center';
+                    productItem.style.justifyContent = 'center';
                     hasValidProducts = true;
                 }
 
@@ -357,18 +374,6 @@ document.addEventListener('DOMContentLoaded', function(){
                     buyButton.target = '_blank';
                     buyButton.className = 'buy-button';
                     buyButton.textContent = 'Купить';
-                    buyButton.style.position = 'absolute';
-                    buyButton.style.bottom = '5px';
-                    buyButton.style.left = '50%';
-                    buyButton.style.transform = 'translateX(-50%)';
-                    buyButton.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-                    buyButton.style.color = 'white';
-                    buyButton.style.padding = '5px 10px';
-                    buyButton.style.borderRadius = '5px';
-                    buyButton.style.textDecoration = 'none';
-                    buyButton.style.fontSize = '12px';
-                    buyButton.style.zIndex = '10';
-
                     productItem.appendChild(buyButton);
                 }
 
@@ -386,19 +391,21 @@ document.addEventListener('DOMContentLoaded', function(){
                 emptyMessage.style.fontSize = '14px';
                 emptyMessage.style.textAlign = 'center';
                 emptyMessage.textContent = 'В этом образе нет товаров с изображениями';
-                outfitGrid.innerHTML = ''; // Очищаем сетку
+                outfitGrid.innerHTML = '';
                 outfitGrid.appendChild(emptyMessage);
             } else {
                 const emptySlots = 4 - maxProducts;
                 for (let i = 0; i < emptySlots; i++) {
                     const emptyItem = document.createElement('div');
                     emptyItem.className = 'outfit-item';
-                    emptyItem.innerHTML = '<span style="color: #999; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">Нет товара</span>';
+                    emptyItem.innerHTML = '<span style="color: #999;">Нет товара</span>';
+                    emptyItem.style.display = 'flex';
+                    emptyItem.style.alignItems = 'center';
+                    emptyItem.style.justifyContent = 'center';
                     outfitGrid.appendChild(emptyItem);
                 }
             }
         } else {
-            console.log('У образа нет товаров');
             const emptyMessage = document.createElement('div');
             emptyMessage.style.gridColumn = '1 / span 2';
             emptyMessage.style.gridRow = '1 / span 2';
@@ -411,10 +418,6 @@ document.addEventListener('DOMContentLoaded', function(){
             emptyMessage.textContent = 'В этом образе пока нет товаров';
             outfitGrid.appendChild(emptyMessage);
         }
-
-        outfitCard.appendChild(outfitHeader);
-        outfitCard.appendChild(outfitGrid);
-        container.appendChild(outfitCard);
     }
 
     // Загрузка товаров на странице каталога
@@ -730,17 +733,14 @@ document.addEventListener('DOMContentLoaded', function(){
     if (window.location.pathname.includes('favoritePage.html') ||
         document.getElementById('favorite')?.classList.contains('active')) {
         setTimeout(() => {
-            const container = document.querySelector('.outfits') || document.getElementById('outfits-display');
+            const container = document.querySelector('.favorites') || document.querySelector('.outfits') || document.getElementById('outfits-display');
             if (container) {
-                removeAllChildren(container);
-                container.innerHTML = '<p style="text-align: center; padding: 20px;">Загрузка избранного...</p>';
                 loadUserOutfits();
             } else {
-                // Создаем контейнер если его нет
                 const mainContainer = document.querySelector('.container');
                 if (mainContainer) {
                     const newContainer = document.createElement('div');
-                    newContainer.className = 'outfits';
+                    newContainer.className = 'favorites';
                     newContainer.id = 'outfits-display';
                     mainContainer.appendChild(newContainer);
                     loadUserOutfits();
