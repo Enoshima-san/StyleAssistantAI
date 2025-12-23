@@ -80,7 +80,10 @@ document.addEventListener('DOMContentLoaded', function(){
                 alert('Ошибка авторизации');
             }
 
-        } catch(error) {console.log(error)}
+        } catch(error) {
+            console.log(error);
+            alert('Ошибка авторизации');
+        }
     })
 
     function addProduct(content) {

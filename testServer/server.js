@@ -22,7 +22,7 @@ const path = require("path");
 
 dotenv.config({ path: path.join(__dirname, ".env") });
 
-const dbPath = path.join(process.cwd(), "db", "BD_test.db");
+const dbPath = path.join(__dirname, "db", "BD_test.db");
 
 // Подключение базы данных
 const db = new sqlite3.Database(dbPath ,sqlite3.OPEN_READWRITE, (err) => {
@@ -465,31 +465,51 @@ app.post('/save-profile', authenticateToken, async (request, response) => {
     });
 });
 
-// Получение данных пользователя
-app.get('/user-data', authenticateToken, (req, res) => {
-    const userId = req.user.userId;
-
-    db.get('SELECT Имя, Почта, Стиль, Цвет, Материал, Рост, Размер_Одежды, Пол FROM Пользователи INNER JOIN Профили_Пользователей ON Пользователи.ID_Пользователя=Профили_Пользователей.ID_Пользователя WHERE Пользователи.ID_Пользователя = ?', [userId], (err, row) => {
-        if (err) {
-            console.error('Ошибка при получении данных пользователя:', err);
-            return res.status(500).json({ error: 'Ошибка базы данных' });
-        }
-
-        if (!row) {
-            return res.status(404).json({ error: 'Пользователь не найден' });
-        }
-
-        res.json({
-            name: row.Имя,
-            email: row.Почта,
-            style: row.Стиль,
-            color: row.Цвет,
-            material: row.Материал,
-            height: row.Рост,
-            size: row.Размер_Одежды,
-            gender: row.Пол
-        });
+function dbGet(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.get(sql, params, (err, row) => {
+      if (err) reject(err);
+      else resolve(row);
     });
+  });
+}
+
+// Получение данных пользователя
+app.get('/user-data', authenticateToken, async (req, res) => {
+    const userId = req.user.userId;
+    try {
+        const userRow = await dbGet('SELECT Имя, Почта, Стиль, Цвет, Материал, Рост, Размер_Одежды, Пол FROM Пользователи INNER JOIN Профили_Пользователей ON Пользователи.ID_Пользователя=Профили_Пользователей.ID_Пользователя WHERE Пользователи.ID_Пользователя = ?', [userId]);
+        const userRowName = await dbGet('SELECT Имя, Почта FROM Пользователи WHERE ID_Пользователя = ?', [userId]);
+        if (userRow){
+            res.json({
+            name: userRow.Имя,
+            email: userRow.Почта,
+            style: userRow.Стиль,
+            color: userRow.Цвет,
+            material: userRow.Материал,
+            height: userRow.Рост,
+            size: userRow.Размер_Одежды,
+            gender: userRow.Пол
+            });
+        }
+        else if (userRowName){
+            res.json({
+            name: userRowName.Имя,
+            email: userRowName.Почта,
+            style: '',
+            color: '',
+            material: '',
+            height: '',
+            size: '',
+            gender: ''
+            });
+        }
+    }catch(err)
+    {
+        console.error(err); 
+        res.status(500).send("An error occurred while fetching data.");
+    }
+
 });
 
 // Получение образов пользователя
