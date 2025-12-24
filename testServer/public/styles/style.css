@@ -353,7 +353,6 @@ h2 {
     border-radius: 4px;
 }
 .outfit-item::after {
-    content: "Вещь";
     position: absolute;
     color: #999;
 
@@ -399,23 +398,23 @@ h2 {
     gap: 5px;
 }
 
-.like-button {
+.action-button.like-button {
     background-color: #e8f5e8;
     color: #2ecc71;
 }
 
-.dislike-button {
+.action-button.dislike-button {
     background-color: #ffe8e8;
     color: #e74c3c;
 }
 
-.like-button:hover {
+.action-button.like-button:hover {
     background-color:#83c9a0;
     color: #5e806c;
     opacity: 1.5;
 }
 
-.dislike-button:hover {
+.action-button.dislike-button:hover {
     background-color:#e68e84;
     color: #e74c3c;
     opacity: 1.5;
