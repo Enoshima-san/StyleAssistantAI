@@ -136,9 +136,10 @@ document.addEventListener('DOMContentLoaded', function(){
         const productInfoP3 = document.createElement('p');
         const productInfoP4 = document.createElement('p');
         const productInfoTitle = document.createElement('h3');
-    
 
-        productDiv.className = `outfit-card`;
+
+        productDiv.className = `outfit-card product-card`;
+        productDiv.dataset.productId = content.ID_Товара;
         productInfoHeader.className = `outfit-header`;
         productInfoGrid.className = `outfit-grid-added`;
         productButtons.className = `outfit-actions`;
