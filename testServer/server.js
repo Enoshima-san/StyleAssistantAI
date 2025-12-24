@@ -1,4 +1,5 @@
 // Подключние фреймворков и библиотек
+/*
 import { InferenceClient  } from "@huggingface/inference";
 import express from 'express';
 import cors from 'cors';
@@ -7,11 +8,24 @@ import dotenv from 'dotenv'
 import { randomUUID } from 'crypto';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import path from "path";
+import { fileURLToPath } from "url"; */
+const { InferenceClient } = require("@huggingface/inference");
+const express = require("express");
+const cors = require("cors");
+const sqlite3 = require("sqlite3");
+const dotenv = require("dotenv");
+const { randomUUID } = require("crypto");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const path = require("path");
 
-dotenv.config({ path: './.env' });
+dotenv.config({ path: path.join(__dirname, ".env") });
+
+const dbPath = path.join(__dirname, "db", "BD_test.db");
 
 // Подключение базы данных
-const db = new sqlite3.Database("BD_test.db" ,sqlite3.OPEN_READWRITE, (err) => {
+const db = new sqlite3.Database(dbPath ,sqlite3.OPEN_READWRITE, (err) => {
     if(err)
     {
         console.log("Error Occurred - " + err.message);
@@ -27,7 +41,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }))
-
+app.use(express.static(path.join(__dirname, "public")));
 
 // Получение данных на сервер и вставка их в базу данных
 app.post('/registration', async (request, response) => {
@@ -35,19 +49,19 @@ app.post('/registration', async (request, response) => {
     // Проверяем, существует ли пользователь с такой почтой
     bcrypt.genSalt(10, (err, salt) => {
         if (err) {
-            console.error(err.message);
+            console.error(err);
             response.status(400);
             response.end();
         }
         bcrypt.hash(data.password, salt, (err, hash) => {
             if (err) {
-                console.error(err.message);
+                console.error(err);
                 response.status(400);
                 response.end();
             }
             db.get('SELECT * FROM Пользователи WHERE Почта = ?', [data.usermail], (err, row) => {
                 if (err) {
-                    console.error(err.message);
+                    console.error(err);
                     response.status(400);
                     response.end();
                     return;
@@ -69,7 +83,7 @@ app.post('/registration', async (request, response) => {
                     [userId, data.usermail, hash, data.username, currentDate],
                     (err) => {
                         if (err) {
-                            console.error(err.message);
+                            console.error(err);
                             response.status(400);
                             response.end();
                         } else {
@@ -91,7 +105,7 @@ app.post('/login', async (request, response) => {
         [data.usermail],
         (err, row) => {
             if (err) {
-                console.error(err.message);
+                console.error(err);
                 response.status(400);
                 response.end();
             } else {
@@ -99,7 +113,7 @@ app.post('/login', async (request, response) => {
                     const storedHash = row.hashedPassword;
                     bcrypt.compare(data.password, storedHash, (err, result) => {
                         if (err) {
-                            console.error(err.message);
+                            console.error(err);
                             response.status(400);
                             response.end();
                         }
@@ -110,7 +124,7 @@ app.post('/login', async (request, response) => {
                             response.status(201);
                             response.end();
                         } else {
-                            console.error(err.message);
+                            console.error(err);
                             response.status(400);
                             response.end();
                         }
@@ -162,147 +176,143 @@ app.post('/prompt', async (req, res) => {
         let dbResults = [];
 
         if (foundKeywords.length > 0) {
-            const placeholders = foundKeywords.map(() => '?').join(',');
-
             const userGender = message.gender.toLowerCase();
             let genderCondition = '';
+            let genderParams = [];
 
             if (userGender.includes('муж') || userGender.includes('male') || userGender.includes('man')) {
                 genderCondition = `
                     AND (
-                        х.Гендер LIKE '%Мужской%' OR 
-                        х.Гендер LIKE '%Мальчики%' OR 
-                        х.Гендер LIKE '%male%' OR 
-                        х.Гендер LIKE '%man%' OR
-                        х.Гендер LIKE '%Мужской, Женский%' OR
-                        х.Гендер LIKE '%Мальчики, Девочки%'
+                        х.Гендер LIKE ? OR 
+                        х.Гендер LIKE ? OR 
+                        х.Гендер LIKE ? OR 
+                        х.Гендер LIKE ? OR
+                        х.Гендер LIKE ? OR
+                        х.Гендер LIKE ?
                     )
                 `;
+                genderParams = ['%Мужской%', '%Мальчики%', '%male%', '%man%', '%Мужской, Женский%', '%Мальчики, Девочки%'];
             }
             else if (userGender.includes('жен') || userGender.includes('female') || userGender.includes('woman')) {
                 genderCondition = `
                     AND (
-                        х.Гендер LIKE '%Женский%' OR 
-                        х.Гендер LIKE '%Девочки%' OR 
-                        х.Гендер LIKE '%female%' OR 
-                        х.Гендер LIKE '%woman%' OR
-                        х.Гендер LIKE '%Женский, Мужской%' OR
-                        х.Гендер LIKE '%Девочки, Мальчики%' OR
+                        х.Гендер LIKE ? OR 
+                        х.Гендер LIKE ? OR 
+                        х.Гендер LIKE ? OR 
+                        х.Гендер LIKE ? OR
+                        х.Гендер LIKE ? OR
+                        х.Гендер LIKE ? OR
                         х.Гендер IS NULL
                     )
                 `;
+                genderParams = ['%Женский%', '%Девочки%', '%female%', '%woman%', '%Женский, Мужской%', '%Девочки, Мальчики%'];
             }
 
             const userColor = message.color ? message.color.toLowerCase() : 'любой';
             const userMaterial = message.material ? message.material.toLowerCase() : 'любой';
 
-            let orderByConditions = [];
+            const categoryPromises = foundKeywords.map(keyword => {
+                return new Promise((resolve, reject) => {
+                    let params = [`%${keyword}%`, `%${keyword}%`, `%${keyword}%`];
+                    params = params.concat(genderParams);
 
-            if (userColor !== 'любой' && userMaterial !== 'любой') {
-                orderByConditions.push(`
-                    CASE 
-                        WHEN (LOWER(х.Цвет) LIKE '%${userColor}%' AND LOWER(х.Состав) LIKE '%${userMaterial}%') THEN 1
-                        WHEN (LOWER(х.Цвет) LIKE '%${userColor}%' OR LOWER(х.Состав) LIKE '%${userMaterial}%') THEN 2
-                        ELSE 3
-                    END
-                `);
-            } else if (userColor !== 'любой') {
-                orderByConditions.push(`
-                    CASE 
-                        WHEN LOWER(х.Цвет) LIKE '%${userColor}%' THEN 1
-                        ELSE 2
-                    END
-                `);
-            } else if (userMaterial !== 'любой') {
-                orderByConditions.push(`
-                    CASE 
-                        WHEN LOWER(х.Состав) LIKE '%${userMaterial}%' THEN 1
-                        ELSE 2
-                    END
-                `);
-            }
-            orderByConditions.push('RANDOM()');
+                    let orderByClause = 'ORDER BY RANDOM()';
 
-            const orderByClause = orderByConditions.length > 0 ?
-                `ORDER BY ${orderByConditions.join(', ')}` :
-                'ORDER BY RANDOM()';
-
-            const sqlQuery = `
-                SELECT
-                    т.ID_Товара,
-                    т.Название AS Название_Товара,
-                    т.Описание,
-                    т.Ссылка_Товар,
-                    х.Бренд,
-                    х.Состав,
-                    х.Цвет,
-                    х.Гендер,
-                    х.Размер_на_Модели,
-                    х.Рост_Модели,
-                    х.Параметры_Модели,
-                    х.Покрой,
-                    х.Цена,
-                    х.Ссылка_Изображение,
-                    к.Название AS Категория,
-                    б.Название AS Название_Бренда
-                FROM Товары т
-                LEFT JOIN Характеристики_Товаров х ON т.ID_Товара = х.ID_Товара
-                LEFT JOIN Категории к ON т.ID_Категории = к.ID_Категории
-                LEFT JOIN Бренды б ON т.ID_Бренда = б.ID_Бренда
-                WHERE (к.Название IN (${placeholders}) 
-                   OR т.Название LIKE '%${foundKeywords[0]}%' 
-                   OR т.Описание LIKE '%${foundKeywords[0]}%')
-                   ${genderCondition}
-                   AND х.Активен = 1
-                ${orderByClause}
-                LIMIT 10
-            `;
-
-            db.all(sqlQuery, foundKeywords, (err, rows) => {
-                if (err) {
-                    console.error('Ошибка при запросе к БД:', err.message);
-                    res.send(JSON.stringify({
-                        status: 'yea',
-                        aiResponse: newString,
-                        dbResults: [],
-                        error: 'Ошибка базы данных: ' + err.message
-                    }));
-                } else {
-                    console.log('Результаты из БД:');
-                    console.log(`Найдено товаров: ${rows.length}`);
-
-                    if (rows.length > 0) {
-                        const perfectMatch = rows.filter(row =>
-                            (userColor === 'любой' || (row.Цвет && row.Цвет.toLowerCase().includes(userColor))) &&
-                            (userMaterial === 'любой' || (row.Состав && row.Состав.toLowerCase().includes(userMaterial)))
-                        );
-
-                        const partialMatch = rows.filter(row =>
-                            (userColor !== 'любой' && row.Цвет && row.Цвет.toLowerCase().includes(userColor)) ||
-                            (userMaterial !== 'любой' && row.Состав && row.Состав.toLowerCase().includes(userMaterial))
-                        );
-
+                    if (userColor !== 'любой' && userMaterial !== 'любой') {
+                        orderByClause = `
+                            ORDER BY 
+                                CASE 
+                                    WHEN (LOWER(х.Цвет) LIKE ? AND LOWER(х.Состав) LIKE ?) THEN 1
+                                    WHEN (LOWER(х.Цвет) LIKE ? OR LOWER(х.Состав) LIKE ?) THEN 2
+                                    ELSE 3
+                                END,
+                                RANDOM()
+                        `;
+                        params.push(`%${userColor}%`, `%${userMaterial}%`, `%${userColor}%`, `%${userMaterial}%`);
+                    } else if (userColor !== 'любой') {
+                        orderByClause = `
+                            ORDER BY 
+                                CASE 
+                                    WHEN LOWER(х.Цвет) LIKE ? THEN 1
+                                    ELSE 2
+                                END,
+                                RANDOM()
+                        `;
+                        params.push(`%${userColor}%`);
+                    } else if (userMaterial !== 'любой') {
+                        orderByClause = `
+                            ORDER BY 
+                                CASE 
+                                    WHEN LOWER(х.Состав) LIKE ? THEN 1
+                                    ELSE 2
+                                END,
+                                RANDOM()
+                        `;
+                        params.push(`%${userMaterial}%`);
                     }
 
-                    // Успешный ответ с данными из БД
-                    res.send(JSON.stringify({
-                        status: 'yea',
-                        aiResponse: newString,
-                        dbResults: rows,
-                        keywords: foundKeywords
-                    }));
-                }
+                    const sqlQuery = `
+                        SELECT
+                            т.ID_Товара,
+                            т.Название AS Название_Товара,
+                            т.Описание,
+                            т.Ссылка_Товар,
+                            х.Бренд,
+                            х.Состав,
+                            х.Цвет,
+                            х.Гендер,
+                            х.Размер_на_Модели,
+                            х.Рост_Модели,
+                            х.Параметры_Модели,
+                            х.Покрой,
+                            х.Цена,
+                            х.Ссылка_Изображение,
+                            к.Название AS Категория,
+                            б.Название AS Название_Бренда
+                        FROM Товары т
+                        LEFT JOIN Характеристики_Товаров х ON т.ID_Товара = х.ID_Товара
+                        LEFT JOIN Категории к ON т.ID_Категории = к.ID_Категории
+                        LEFT JOIN Бренды б ON т.ID_Бренда = б.ID_Бренда
+                        WHERE (к.Название LIKE ? 
+                           OR т.Название LIKE ? 
+                           OR т.Описание LIKE ?)
+                           ${genderCondition}
+                           AND х.Активен = 1
+                        ${orderByClause}
+                        LIMIT 1
+                    `;
+
+                    db.all(sqlQuery, params, (err, rows) => {
+                        if (err) {
+                            console.error(`Ошибка при запросе для категории ${keyword}:`, err.message);
+                            resolve(null);
+                        } else if (rows && rows.length > 0) {
+                            resolve(rows[0]);
+                        } else {
+                            resolve(null);
+                        }
+                    });
+                });
             });
+
+            const categoryResults = await Promise.all(categoryPromises);
+
+            dbResults = categoryResults.filter(item => item !== null);
+
+            console.log(`Найдено товаров по категориям: ${dbResults.length} из ${foundKeywords.length} категорий`);
+
         } else {
             console.log('Не найдено ключевых слов для поиска в БД');
-            // Отправляем ответ без результатов БД
-            res.send(JSON.stringify({
-                status: 'yea',
-                aiResponse: newString,
-                dbResults: [],
-                keywords: []
-            }));
         }
+
+        res.send(JSON.stringify({
+            status: 'yea',
+            aiResponse: newString,
+            dbResults: dbResults,
+            keywords: foundKeywords,
+            aiPrompt: testPromt
+        }));
+
     } catch (error) {
         console.error('Hugging Face API error:', error.response ? error.response.data : error.message);
         res.status(500).json({ error: 'Failed to perform inference' });
@@ -323,13 +333,93 @@ const authenticateToken = (req, res, next) => {
     });
 };
 
+// Сохранение образа в бд
+app.post('/saveAnswer', authenticateToken, async (request, response) => {
+    const userId = request.user.userId;
+    const data = request.body;
+    const currentDate = new Date().toISOString();
+    const outfitId = randomUUID();
+
+    try {
+        // Сохраняем образ
+        db.run('INSERT INTO Образы (ID_Образа, ID_Пользователя, Название, Параметры_Генерации, Дата_Создания) VALUES (?, ?, ?, ?, ?)',
+            [outfitId, userId, data.aiResponse, data.aiPrompt, currentDate],
+            (err) => {
+                if (err) {
+                    console.error('Ошибка сохранения образа:', err.message);
+                    return response.status(400).json({
+                        error: 'Ошибка сохранения образа',
+                        details: err.message
+                    });
+                }
+
+                console.log('Образ сохранен, ID:', outfitId);
+
+                // Сохраняем товары образа (если есть)
+                if (data.productIds && data.productIds.length > 0) {
+                    console.log('Начинаю сохранение товаров...');
+
+                    let completed = 0;
+                    const total = data.productIds.length;
+
+                    data.productIds.forEach((productId, index) => {
+                        if (!productId || productId === 'undefined' || productId === 'null') {
+                            completed++;
+                            if (completed === total) {
+                                response.status(201).json({
+                                    message: 'Образ сохранен (некоторые товары пропущены)',
+                                    outfitId: outfitId
+                                });
+                            }
+                            return;
+                        }
+
+                        // Сохраняем элемент образа
+                        db.run('INSERT INTO Элементы_Образа (ID_Образа, ID_Товара, Позиция) VALUES (?, ?, ?)',
+                            [outfitId, productId, index + 1],
+                            (err) => {
+                                if (err) {
+                                    console.error('Ошибка сохранения элемента:', err.message);
+                                } else {
+                                    console.log(`Сохранен товар ${index + 1}/${total}: ${productId}`);
+                                }
+
+                                completed++;
+                                if (completed === total) {
+                                    response.status(201).json({
+                                        message: 'Образ и товары сохранены',
+                                        outfitId: outfitId
+                                    });
+                                }
+                            }
+                        );
+                    });
+                } else {
+                    console.log('Нет товаров для сохранения');
+                    response.status(201).json({
+                        message: 'Образ сохранен без товаров',
+                        outfitId: outfitId
+                    });
+                }
+            }
+        );
+    } catch (error) {
+        console.error('Общая ошибка при сохранении:', error);
+        response.status(500).json({
+            error: 'Внутренняя ошибка сервера',
+            details: error.message
+        });
+    }
+});
+
+
 app.post('/save-profile', authenticateToken, async (request, response) => {
     const userId = request.user.userId;
     const data = request.body;
 
     db.get('SELECT * FROM Профили_Пользователей WHERE ID_Пользователя = ?', [userId], (err, row) => {
         if (err) {
-            console.error('Ошибка при проверке профиля:', err.message);
+            console.error('Ошибка при проверке профиля:', err);
             response.status(500).json({ error: 'Ошибка базы данных' });
             return;
         }
@@ -347,7 +437,7 @@ app.post('/save-profile', authenticateToken, async (request, response) => {
                 data.height, data.size, data.gender, currentDate, userId
             ], (err) => {
                 if (err) {
-                    console.error('Ошибка при обновлении профиля:', err.message);
+                    console.error('Ошибка при обновлении профиля:', err);
                     response.status(500).json({ error: 'Ошибка обновления профиля' });
                 } else {
                     console.log("Профиль обновлен для пользователя:", userId);
@@ -364,7 +454,7 @@ app.post('/save-profile', authenticateToken, async (request, response) => {
                 data.height, data.size, data.gender, currentDate
             ], (err) => {
                 if (err) {
-                    console.error('Ошибка при создании профиля:', err.message);
+                    console.error('Ошибка при создании профиля:', err);
                     response.status(500).json({ error: 'Ошибка сохранения профиля' });
                 } else {
                     console.log("Профиль создан для пользователя:", userId);
@@ -375,31 +465,139 @@ app.post('/save-profile', authenticateToken, async (request, response) => {
     });
 });
 
+function dbGet(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.get(sql, params, (err, row) => {
+      if (err) reject(err);
+      else resolve(row);
+    });
+  });
+}
+
 // Получение данных пользователя
-app.get('/user-data', authenticateToken, (req, res) => {
+app.get('/user-data', authenticateToken, async (req, res) => {
+    const userId = req.user.userId;
+    try {
+        const userRow = await dbGet('SELECT Имя, Почта, Стиль, Цвет, Материал, Рост, Размер_Одежды, Пол FROM Пользователи INNER JOIN Профили_Пользователей ON Пользователи.ID_Пользователя=Профили_Пользователей.ID_Пользователя WHERE Пользователи.ID_Пользователя = ?', [userId]);
+        const userRowName = await dbGet('SELECT Имя, Почта FROM Пользователи WHERE ID_Пользователя = ?', [userId]);
+        if (userRow){
+            res.json({
+            name: userRow.Имя,
+            email: userRow.Почта,
+            style: userRow.Стиль,
+            color: userRow.Цвет,
+            material: userRow.Материал,
+            height: userRow.Рост,
+            size: userRow.Размер_Одежды,
+            gender: userRow.Пол
+            });
+        }
+        else if (userRowName){
+            res.json({
+            name: userRowName.Имя,
+            email: userRowName.Почта,
+            style: '',
+            color: '',
+            material: '',
+            height: '',
+            size: '',
+            gender: ''
+            });
+        }
+    }catch(err)
+    {
+        console.error(err); 
+        res.status(500).send("An error occurred while fetching data.");
+    }
+
+});
+
+// Получение образов пользователя
+app.get('/user-outfits', authenticateToken, async (req, res) => {
     const userId = req.user.userId;
 
-    db.get('SELECT Имя, Почта, Стиль, Цвет, Материал, Рост, Размер_Одежды, Пол FROM Пользователи INNER JOIN Профили_Пользователей ON Пользователи.ID_Пользователя=Профили_Пользователей.ID_Пользователя WHERE Пользователи.ID_Пользователя = ?', [userId], (err, row) => {
+    const query = `
+        SELECT
+            о.ID_Образа,
+            о.Название,
+            о.Параметры_Генерации,
+            о.Дата_Создания,
+            э.ID_Товара,
+            т.Название AS Название_Товара,
+            т.Ссылка_Товар,
+            х.Ссылка_Изображение,
+            э.Позиция
+        FROM Образы о
+                 LEFT JOIN Элементы_Образа э ON о.ID_Образа = э.ID_Образа
+                 LEFT JOIN Товары т ON э.ID_Товара = т.ID_Товара
+                 LEFT JOIN Характеристики_Товаров х ON т.ID_Товара = х.ID_Товара
+        WHERE о.ID_Пользователя = ?
+        ORDER BY о.Дата_Создания DESC, э.Позиция ASC
+    `;
+
+    db.all(query, [userId], (err, rows) => {
         if (err) {
-            console.error('Ошибка при получении данных пользователя:', err.message);
+            console.error('Ошибка при получении образов:', err.message);
             return res.status(500).json({ error: 'Ошибка базы данных' });
         }
 
-        if (!row) {
-            return res.status(404).json({ error: 'Пользователь не найден' });
-        }
+        const outfitsMap = {};
+        rows.forEach(row => {
+            if (!outfitsMap[row.ID_Образа]) {
+                outfitsMap[row.ID_Образа] = {
+                    outfitId: row.ID_Образа,
+                    outfitName: row.Название || 'Сохраненный образ',
+                    generationParams: row.Параметры_Генерации,
+                    creationDate: row.Дата_Создания,
+                    products: []
+                };
+            }
 
-        res.json({
-            name: row.Имя,
-            email: row.Почта,
-            style: row.Стиль,
-            color: row.Цвет,
-            material: row.Материал,
-            height: row.Рост,
-            size: row.Размер_Одежды,
-            gender: row.Пол
+            if (row.ID_Товара) {
+                outfitsMap[row.ID_Образа].products.push({
+                    productId: row.ID_Товара,
+                    productName: row.Название_Товара,
+                    productLink: row.Ссылка_Товар,
+                    productImage: row.Ссылка_Изображение,
+                    position: row.Позиция
+                });
+            }
         });
+
+        const outfits = Object.values(outfitsMap);
+        res.json(outfits);
     });
+});
+
+// Удаление образа
+app.delete('/delete-outfit/:outfitId', authenticateToken, (req, res) => {
+    const userId = req.user.userId;
+    const outfitId = req.params.outfitId;
+
+    // Проверяем, что образ принадлежит пользователю
+    db.get('SELECT * FROM Образы WHERE ID_Образа = ? AND ID_Пользователя = ?',
+        [outfitId, userId],
+        (err, row) => {
+            if (err) {
+                console.error('Ошибка при проверке образа:', err.message);
+                return res.status(500).json({ error: 'Ошибка базы данных' });
+            }
+
+            if (!row) {
+                return res.status(404).json({ error: 'Образ не найден или у вас нет прав на его удаление' });
+            }
+
+            // Удаляем образ (внешние ключи настроены на каскадное удаление)
+            db.run('DELETE FROM Образы WHERE ID_Образа = ?', [outfitId], function(err) {
+                if (err) {
+                    console.error('Ошибка при удалении образа:', err.message);
+                    return res.status(500).json({ error: 'Ошибка удаления образа' });
+                }
+
+                res.json({ message: 'Образ успешно удален' });
+            });
+        }
+    );
 });
 
 // Доступ к функциям авторизированных пользователей
