@@ -101,6 +101,7 @@ document.addEventListener('DOMContentLoaded', function(){
         productImg.src = `${content.Ссылка_Изображение}`;
         productImg.width = "200";
         productImg.height = "200";
+        productImg.target = '_blank';
         productDiv.dataset.productId = content.ID_Товара;
         productInfo.className = 'product-info';
         productInfoP1.textContent = `Название: ${content.Название_Товара}`
@@ -109,7 +110,8 @@ document.addEventListener('DOMContentLoaded', function(){
         productInfoP4.textContent = `Цена: ${content.Цена} рублей`
         productButton.href = `${content.Ссылка_Товар}`;
         productButton.class = "product-button";
-        productButton.textContent = "Купить"
+        productButton.textContent = "Купить";
+        productButton.target='_blank';
         productInfo.appendChild(productInfoP1)
         productInfo.appendChild(productInfoP2)
         productInfo.appendChild(productInfoP3)
@@ -127,7 +129,6 @@ document.addEventListener('DOMContentLoaded', function(){
         const productInfoGrid = document.createElement('div');
         const productInfo = document.createElement('div');
         const productButtons = document.createElement('div');
-        const productButtonHeart = document.createElement('div');
         const productImg = document.createElement('img');
         const productBuy = document.createElement('a');
         const productButtonLike = document.createElement('button');
@@ -145,10 +146,8 @@ document.addEventListener('DOMContentLoaded', function(){
         productButtons.className = `outfit-actions`;
 
         productInfoTitle.className = `outfit-title`;
-        productButtonHeart.className = `heart-icon`;
 
         productInfoTitle.innerHTML  = `Название: ${content.Название_Товара}`;
-        productButtonHeart.innerHTML  = `♥`;
 
         productInfo.className = 'outfit-item-added';
         productBuy.className = "outfit-button-added";
@@ -158,8 +157,10 @@ document.addEventListener('DOMContentLoaded', function(){
         productImg.src = `${content.Ссылка_Изображение}`;
         productImg.width = "200";
         productImg.height = "200";
+        productImg.target='_blank';
         productBuy.href = `${content.Ссылка_Товар}`;
-        productBuy.textContent = "Купить"
+        productBuy.textContent = "Купить";
+        productBuy.target='_blank';
 
         productButtonLike.className = `action-button like-button`;
         productButtonDislike.className = `action-button dislike-button`;
@@ -168,7 +169,6 @@ document.addEventListener('DOMContentLoaded', function(){
         productButtonDislike.innerHTML  = "👎 Дизлайк";
 
         productInfoHeader.appendChild(productInfoTitle);
-        productInfoHeader.appendChild(productButtonHeart);
         productInfo.appendChild(productImg);
         productInfo.appendChild(productInfoP2);
         productInfo.appendChild(productInfoP3);

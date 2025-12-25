@@ -99,38 +99,37 @@ app.post('/registration', async (request, response) => {
 });
 
 // Получение данных на сервер и сверка их с существующими в базе данных
-app.post('/login', async (request, response) => {
-    const data = request.body;
-    db.get('SELECT ID_Пользователя as userId, Имя as userName, Пароль as hashedPassword FROM Пользователи WHERE Почта = ?',
+app.post('/login', async (req, res) => {
+    const data = req.body;
+    db.get(
+        'SELECT ID_Пользователя as userId, Имя as userName, Пароль as hashedPassword FROM Пользователи WHERE Почта = ?',
         [data.usermail],
         (err, row) => {
             if (err) {
                 console.error(err);
-                response.status(400);
-                response.end();
-            } else {
-                if (row) {
-                    const storedHash = row.hashedPassword;
-                    bcrypt.compare(data.password, storedHash, (err, result) => {
-                        if (err) {
-                            console.error(err);
-                            response.status(400);
-                            response.end();
-                        }
-                        if (result) {
-                            console.log("Login successful for user:", data.usermail);
-                            const token = jwt.sign({ userId: row.userId, username: row.userName }, process.env.SECRET_KEY, { expiresIn: '1h' });
-                            response.json({ token, message: 'Вход успешен' });
-                            response.status(201);
-                            response.end();
-                        } else {
-                            console.error(err);
-                            response.status(400);
-                            response.end();
-                        }
-                    });
-                }
+                return res.status(500).json({ message: 'Ошибка сервера' });
             }
+            if (!row) {
+                return res.status(401).json({ message: 'Неверная почта или пароль' });
+            }
+            bcrypt.compare(data.password, row.hashedPassword, (err, result) => {
+                if (err) {
+                    console.error(err);
+                    return res.status(500).json({ message: 'Ошибка сервера' });
+                }
+                if (!result) {
+                    return res.status(401).json({ message: 'Неверная почта или пароль' });
+                }
+                const token = jwt.sign(
+                    { userId: row.userId, username: row.userName },
+                    process.env.SECRET_KEY,
+                    { expiresIn: '1h' }
+                );
+                return res.status(200).json({
+                    token,
+                    message: 'Вход успешен'
+                });
+            });
         }
     );
 });
