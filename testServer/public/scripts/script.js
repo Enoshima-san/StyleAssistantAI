@@ -200,12 +200,15 @@ document.addEventListener('DOMContentLoaded', function(){
                     document.getElementById('userName').textContent = userData.name;
                     document.getElementById('userEmail').textContent = userData.email;
                 }
+                if(document.querySelector('.about-info')) {
+                    document.getElementById('about').value = userData.about || "";
+                }
                 document.getElementById('style').value = userData.style || "";
                 document.getElementById('color').value = userData.color || "";
                 document.getElementById('material').value = userData.material || "";
 
-                document.getElementById('height').value = userData.height || "";
-                document.getElementById('size').value = userData.size || "";
+                document.getElementById('height').value = +(userData.height) || "";
+                document.getElementById('size').value = +(userData.size) || "";
                 document.getElementById('gender').value = userData.gender || "";
 
                 console.log('Данные пользователя загружены:', userData);
@@ -690,7 +693,10 @@ document.addEventListener('DOMContentLoaded', function(){
 
     saveButton?.addEventListener('click', async (e) => {
         e.preventDefault();
-
+        const maxHeight = 250;
+        const minHeight = 40;
+        const maxSize = 70;
+        const minSize = 20;
         const token = sessionStorage.getItem('token');
 
         if (!token) {
@@ -698,15 +704,19 @@ document.addEventListener('DOMContentLoaded', function(){
             window.location.replace('releasePage.HTML');
             return;
         }
-
+        if (document.getElementById('height').value > maxHeight ||  document.getElementById('height').value < minHeight || document.getElementById('size').value > maxSize || document.getElementById('size').value < minSize)
+        {
+            alert('Ошибка ввода размера или роста пользователя');
+            return;
+        }
         const profileData = {
             about: document.getElementById('about')?.value || 'Пользователь',
             style: document.querySelectorAll('.user-style input[type="text"]')[0]?.value || 'Любой',
             color: document.querySelectorAll('.user-style input[type="text"]')[1]?.value || 'Любой',
             material: document.querySelectorAll('.user-style input[type="text"]')[2]?.value || 'Любой',
-            height: document.querySelectorAll('.user-params input[type="text"]')[0]?.value || 'Любой',
-            size: document.querySelectorAll('.user-params input[type="text"]')[1]?.value || 'Любой',
-            gender: document.querySelectorAll('.user-params input[type="text"]')[2]?.value || 'Любой'
+            height: document.querySelectorAll('.user-params input[type="number"]')[0]?.value || 'Любой',
+            size: document.querySelectorAll('.user-params input[type="number"]')[1]?.value || 'Любой',
+            gender: document.querySelectorAll('.user-params input[type="text"]')[0]?.value || 'Любой'
         };
 
         try {

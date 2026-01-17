@@ -477,7 +477,7 @@ function dbGet(sql, params = []) {
 app.get('/user-data', authenticateToken, async (req, res) => {
     const userId = req.user.userId;
     try {
-        const userRow = await dbGet('SELECT Имя, Почта, Стиль, Цвет, Материал, Рост, Размер_Одежды, Пол FROM Пользователи INNER JOIN Профили_Пользователей ON Пользователи.ID_Пользователя=Профили_Пользователей.ID_Пользователя WHERE Пользователи.ID_Пользователя = ?', [userId]);
+        const userRow = await dbGet('SELECT Имя, Почта, Стиль, Цвет, Материал, Рост, Размер_Одежды, Пол, О_Себе FROM Пользователи INNER JOIN Профили_Пользователей ON Пользователи.ID_Пользователя=Профили_Пользователей.ID_Пользователя WHERE Пользователи.ID_Пользователя = ?', [userId]);
         const userRowName = await dbGet('SELECT Имя, Почта FROM Пользователи WHERE ID_Пользователя = ?', [userId]);
         if (userRow){
             res.json({
@@ -488,7 +488,8 @@ app.get('/user-data', authenticateToken, async (req, res) => {
             material: userRow.Материал,
             height: userRow.Рост,
             size: userRow.Размер_Одежды,
-            gender: userRow.Пол
+            gender: userRow.Пол,
+            about: userRow.О_Себе
             });
         }
         else if (userRowName){
@@ -500,7 +501,8 @@ app.get('/user-data', authenticateToken, async (req, res) => {
             material: '',
             height: '',
             size: '',
-            gender: ''
+            gender: '',
+            about: ''
             });
         }
     }catch(err)
